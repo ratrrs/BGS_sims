@@ -120,14 +120,14 @@ simplot<-function(somedata,mystat,label,bneck){
 
 # Neutral Sims
 
-Maize
+### Maize
 ```{r}
 maize_neutral <-read_sim("sims/results/sim_neutralPi_maize_neutral2.csv","sims/results/sim_singleton_maize_neutral2.csv",neutral=TRUE)
 maize_neutral_anova <-read_single_sim("sims/results/sim_neutralPi_maize_neutral2.csv","sims/results/sim_singleton_maize_neutral2.csv",neutral=TRUE)
 simplot(maize_neutral,"pi",expression(bar(pi)),2200)
 ```
 
-European
+### European
 ```{r}
 European_neutral <-read_sim("sims/results/sim_neutralPi_European_neutral2.csv","sims/results/sim_singleton_European_neutral2.csv",neutral=TRUE)
 European_neutral_anova <-read_single_sim("sims/results/sim_neutralPi_European_neutral2.csv","sims/results/sim_singleton_European_neutral2.csv",neutral=TRUE)
