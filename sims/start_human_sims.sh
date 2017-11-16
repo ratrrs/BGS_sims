@@ -12,5 +12,8 @@
 
 
 
-mkdir -p results/tmp_neutral
-python sims/sim_humans.py demographies/tennesen.csv results/tmp_neutral/ $SLURM_ARRAY_TASK_ID
+mkdir -p results/tennessen/
+python sims/simulate_humans.py demographies/tennessen.csv results/tennessen/ $SLURM_ARRAY_TASK_ID
+
+#mkdir -p results/torres/
+#python sims/simulate_humans.py demographies/torres.csv results/torres/ $SLURM_ARRAY_TASK_ID

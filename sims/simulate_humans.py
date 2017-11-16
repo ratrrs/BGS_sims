@@ -4,7 +4,7 @@ import sys
 
 demog_file = sys.argv[1]#'../demographies/tennessen.csv'
 out_path = sys.argv[2]#'results/'
-replicate = sys.argv[3]
+replicate = str(sys.argv[3])
 # get the demography
 
 demog =get_demography(demog_file)
@@ -91,7 +91,7 @@ params = fp11.model_params.SlocusParams(**p)
 
 # add recorder that records pi, singletons and tajimas D
 set_gen = (10*Nstart)+200 # adjust generation labels without burnin and start
-rec1=neutral_div(set_gen,final=humans.generation+len(demog)+200)
+rec1=neutral_div(set_gen,final=humans.generation+len(demog)+200,Nstart=Nstart)
 
 
 wf.evolve(rng2, humans,params,rec1)

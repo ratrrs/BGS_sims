@@ -1,0 +1,327 @@
+---
+title: "Background selection in maize and humans"
+output:
+  html_document: default
+  html_notebook: default
+  pdf_document: default
+---
+
+```{r setup}
+knitr::opts_knit$set(root.dir = '~/Documents/bgs_sims/')
+```
+
+
+Simulated data from $N_e=10,000$ with bottleneck and growth following [Beissinger et al. 2016](https://www.nature.com/articles/nplants201684). Munged data will be neutral $\pi$ and $\xi_1$ (singletons) shown every 100 generations in each of 24 4Kb windows centered around a 4kb "gene" which has neutral (\frac{1}{4}) and deleterious (\frac{3}{4}) mutations. Deleterious mutations are drawn from a gamma with some mean s (see below).
+
+#Boring Libraries and functions
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggjoy)
+library(viridis)
+library(cowplot)
+```
+
+### Europeans
+
+For Europeans, we follow a slightly modified model of [Torres et al. 2017](http://www.biorxiv.org/content/early/2017/09/01/181859) but the gene model is as above. Our demographic model is 
+
+```{r munge function}
+read_sim<-function(pidata,xidata,neutral=FALSE){
+  #read data
+  pi<-as.tibble(read.csv(pidata,header=F))
+  pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
+  xi<-as.tibble(read.csv(xidata,header=F)) 
+  xi<-mutate(xi,stat=rep("xi",length(xi[,1])))
+  #munge into single tibble of means
+  data<-rbind(xi,pi) %>%
+    `colnames<-`(c("gen", 1:25, "sim", "stat")) %>%
+    gather(window,value,2:26) %>% 
+    mutate(gen=gen-100000) %>%
+    group_by(gen,stat,window) %>%
+    summarize(mean_val=mean(value)) %>%
+    mutate(window=(as.numeric(window)-13)*4000*3E-5,mean_val=mean_val)
+    data=mutate(data,mean_val=if_else(window==0.00,mean_val*4,mean_val))
+  if(neutral==TRUE){
+    data=mutate(data,mean_val=if_else(window==0.00,mean_val/4,mean_val))
+  }
+
+  return(data)
+}
+```
+
+
+```{r plot_fun}
+simplot<-function(somedata,mystat,label,bneck){
+  ggplot(filter(somedata,gen %% 100 <1,stat==mystat,gen>bneck), aes(x=window, y=mean_val, group = gen,color=gen)) + 
+  scale_color_viridis(name='Generation') +   
+  background_grid(major = "xy", minor = "none") +
+  geom_line() + 
+  ylab(label)  + xlab("cM") +
+  scale_x_continuous(breaks = seq(-1.5,1.5,0.5))
+}
+```
+
+```{r}
+merge_sel_neutral <- function(sel_sim_data,neut_sim_data){
+  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','stat','window'))
+  merged$mean_val <- merged$mean_val.x/merged$mean_val.y
+  merged
+}
+
+```
+
+
+```{r}
+setwd('~/Documents/bgs_sims/')
+```
+### Neutral Sims
+```{r}
+maize_neutral <-read_sim("sims/results/sim_neutralPi_maize_neutral2.csv","sims/results/sim_singleton_maize_neutral2.csv",neutral=TRUE)
+head(maize_neutral)
+unique(maize_neutral$window)
+simplot(maize_neutral,"pi",expression(bar(pi)),2200)
+European_neutral <-read_sim("sims/results/sim_neutralPi_European_neutral2.csv","sims/results/sim_singleton_European_neutral2.csv",neutral=TRUE)
+simplot(European_neutral,"pi",expression(bar(pi)),2200)
+
+
+```
+
+# Weak selection $s=5\times 10^{-5}$
+###Maize
+```{r}
+maize<-read_sim("sims/results/sim_neutralPi_maize_s5E-5.csv","sims/results/sim_singleton_maize_s5E-5.csv")
+maize_merged <- merge_sel_neutral(maize,maize_neutral)
+```
+
+####$\pi$
+```{r}
+simplot(maize_merged,"pi",expression(bar(pi)/bar(pi)[neut]),2200)
+
+```
+
+####$\xi_1$
+```{r}
+simplot(maize_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),2200)
+```
+
+
+### Human
+
+```{r}
+European<-read_sim("sims/results/sim_neutralPi_European_s5E-5.csv","sims/results/sim_singleton_European_s5E-5.csv")
+European_merged <- merge_sel_neutral(European,European_neutral)
+```
+####$\pi$
+```{r}
+simplot(European_merged,"pi",expression(bar(pi)/bar(pi)[neut]),100)
+```
+
+####$\xi_1$
+```{r}
+simplot(European_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),100)
+```
+
+
+# Intermediate selection $s=5\times 10^{-4}$
+###Maize
+```{r}
+maize<-read_sim("sims/results/sim_neutralPi_maize_s5E-4.csv","sims/results/sim_singleton_maize_s5E-4.csv")
+maize_merged <- merge_sel_neutral(maize,maize_neutral)
+```
+
+####$\pi$
+```{r}
+simplot(maize_merged,"pi",expression(bar(pi)/bar(pi)[neut]),2200)
+
+```
+
+####$\xi_1$
+```{r}
+simplot(maize_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),2200)
+```
+
+
+
+### Human
+
+```{r}
+European<-read_sim("sims/results/sim_neutralPi_European_s5E-4.csv","sims/results/sim_singleton_European_s5E-4.csv")
+European_merged <- merge_sel_neutral(European,European_neutral)
+```
+####$\pi$
+```{r}
+simplot(European_merged,"pi",expression(bar(pi)/bar(pi)[neut]),100)
+```
+
+
+####$\xi_1$
+```{r}
+simplot(European_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),100)
+```
+
+# Strong selection $s=5\times 10^{-3}$
+###Maize
+```{r}
+maize<-read_sim("sims/results/sim_neutralPi_maize_s5E-3.csv","sims/results/sim_singleton_maize_s5E-3.csv")
+maize_merged <- merge_sel_neutral(maize,maize_neutral)
+```
+
+####$\pi$
+```{r}
+simplot(maize_merged,"pi",expression(bar(pi)/bar(pi)[neut]),2200)
+
+```
+
+```{r}
+comb <- maize_merged %>%
+  filter(window==0)
+start_val <- comb %>%
+  filter(gen==200)
+ggplot(comb,aes(gen,mean_val,color=stat)) +geom_line(size=1.5) +
+  geom_hline(yintercept = start_val$mean_val) +
+  labs(x='Generation',y=expression(x/x[0]),color='Statistics')
+
+```
+
+####$\xi_1$
+```{r}
+simplot(maize_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),2200)
+```
+
+
+### Human
+
+```{r}
+European<-read_sim("sims/results/sim_neutralPi_European_s5E-3.csv","sims/results/sim_singleton_European_s5E-3.csv")
+European_merged <- merge_sel_neutral(European,European_neutral)
+```
+####$\pi$
+```{r}
+simplot(European_merged,"pi",expression(bar(pi)/bar(pi)[neut]),100)
+```
+
+
+####$\xi_1$
+```{r}
+simplot(European_merged,"xi",expression(bar(xi[i])/bar(xi[i[neut]])),100)
+```
+
+
+# Anova to test effect of generation on $\pi$ and $\xi$
+
+
+
+```{r}
+read_single_sim<-function(pidata,xidata,neutral=FALSE){
+  #read data
+  pi<-as.tibble(read.csv(pidata,header=F))
+  pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
+  xi<-as.tibble(read.csv(xidata,header=F)) 
+  xi<-mutate(xi,stat=rep("xi",length(xi[,1])))
+  #munge into single tibble of means
+  data<-rbind(xi,pi) %>%
+    `colnames<-`(c("gen", 1:25, "sim", "stat")) %>%
+    gather(window,value,2:26) %>% 
+    mutate(gen=gen-100000) %>%
+    mutate(window=(as.numeric(window)-13)*4000*3E-5)
+    data=mutate(data,value=if_else(window==0.00,value*4,value))
+  if(neutral==TRUE){
+    data=mutate(data,value=if_else(window==0.00,value/4,value))
+  }
+  return(data)
+}
+
+```
+
+```{r}
+merge_single_sel_neutral <- function(sel_sim_data,neut_sim_data){
+  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','sim','stat','window'))
+  merged$value <- merged$value.x/merged$value.y
+  merged
+}
+
+```
+
+
+```{r}
+sim_anova <- function(somedata,stats){
+sep_parm <- filter(somedata,stat==stats,!is.na(value),value != Inf)
+sep_parm$gen <- as.factor(sep_parm$gen)
+sep_parm$window <- as.factor(sep_parm$window)
+fit <- lm(value ~ gen + window + gen*window, data=sep_parm,na.action = na.exclude)
+
+print(anova(fit))
+}
+
+```
+
+```{r}
+maize_neutral <-read_single_sim("sims/results/sim_neutralPi_maize_neutral2.csv","sims/results/sim_singleton_maize_neutral2.csv",neutral=TRUE)
+European_neutral <-read_single_sim("sims/results/sim_neutralPi_European_neutral2.csv","sims/results/sim_singleton_European_neutral2.csv",neutral=TRUE)
+
+
+```
+
+#  $s=5\times 10^{-4}$
+
+#Anova $\pi$ 
+
+### Maize
+```{r}
+maize<-read_single_sim("sims/results/sim_neutralPi_maize_s5E-4.csv","sims/results/sim_singleton_maize_s5E-4.csv")
+maize_merged <- merge_single_sel_neutral(maize,maize_neutral)
+sim_anova(maize_merged,'pi')
+```
+
+### Humans
+```{r}
+European<-read_single_sim("sims/results/sim_neutralPi_European_s5E-4.csv","sims/results/sim_singleton_European_s5E-4.csv")
+European_merged <- merge_single_sel_neutral(European,European_neutral)
+sim_anova(European_merged,'pi')
+```
+
+
+#Anova $\xi$ 
+### Maize
+```{r}
+sim_anova(maize_merged,'xi')
+```
+
+### Humans
+```{r}
+sim_anova(European_merged,'xi')
+```
+
+
+#  $s=5\times 10^{-5}$
+
+## Anova $\pi$ 
+
+
+
+### Maize
+```{r}
+maize<-read_single_sim("sims/results/sim_neutralPi_maize_s5E-5.csv","sims/results/sim_singleton_maize_s5E-5.csv")
+maize_merged <- merge_single_sel_neutral(maize,maize_neutral)
+sim_anova(maize_merged,'pi')
+```
+
+### Humans
+```{r}
+European<-read_single_sim("sims/results/sim_neutralPi_European_s5E-5.csv","sims/results/sim_singleton_European_s5E-5.csv")
+European_merged <- merge_single_sel_neutral(European,European_neutral)
+sim_anova(European_merged,'pi')
+```
+
+
+#Anova $\xi$ 
+### Maize
+```{r}
+sim_anova(maize_merged,'xi')
+```
+
+### Humans
+```{r}
+sim_anova(European_merged,'xi')
+```
