@@ -68,16 +68,17 @@ class neutral_div:
     def __call__(self, pop):
         rng3 = fp11.GSLrng(np.random.randint(420000))
         if self.counter % 100 == 0  or (pop.generation==self.final):
+            print(pop.generation)
             samp = fp11.sampling.sample_separate(rng3, pop, 1000, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
             w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=101.0)
-            window_pi = [PolySIM(w[i]).thetapi() for i in range(len(w))]
-            window_singleton = [PolySIM(w[i]).numsingletons() for i in range(len(w))]
-            window_tajimasD = [PolySIM(w[i]).tajimasd() for i in range(len(w))]
+            window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
+            window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
+            window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)
 
-            self.pi.append([(pop.generation-self.set_gen)/self.Nstart]+window_pi)
-            self.singleton.append([(pop.generation-self.set_gen)/self.Nstart]+window_singleton)
-            self.tajimasD.append([pop.generation-self.set_gen/self.Nstart]+window_tajimasD)
+            self.pi.append(np.append([(pop.generation-self.set_gen)/self.Nstart],window_pi))
+            self.singleton.append(np.append([(pop.generation-self.set_gen)/self.Nstart],window_singleton))
+            self.tajimasD.append(np.append([pop.generation-self.set_gen/self.Nstart],window_tajimasD))
         self.counter += 1
 
 

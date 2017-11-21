@@ -5,9 +5,9 @@
 #SBATCH -e /home/mstetter/BGS_sims/logs/simulation_stderr-%j.txt
 #SBATCH -t 8-00:00
 #SBATCH -J bgsSim
-#SBATCH --array=0-199
+#SBATCH --array=0-499
 #SBATCH --nodes=1-1
-#SBATCH --ntasks 1
+#SBATCH --ntasks 2
 #SBATCH --exclude bigmem10
 
 

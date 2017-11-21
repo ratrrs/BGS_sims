@@ -16,7 +16,7 @@ sregion,nregion,rates = regions_human_dfe(1.66e-8,neutral = True)
 Nstart = int(demog.item(0))
 
 # constant size for 10 N generations
-burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
+burnin=np.array([Nstart]*int(1*Nstart),dtype=np.uint32)
 
 humans =  fp11.SlocusPop(Nstart)
 

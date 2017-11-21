@@ -2,7 +2,11 @@ import pandas as pd
 import os
 import sys
 
+"""
+Combine summary statistics output from BGS sims 
 
+python combine_sim_output.py [RESULTS FOLDER] [MODEL NAME]
+"""
 results_dir = sys.argv[1]#'../results'
 model = sys.argv[2]#'tennessen'
 def combine_results(input_dir,stats,selection,model):
