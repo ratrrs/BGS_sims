@@ -83,25 +83,3 @@ class neutral_div:
 
 
 
-def regions_human_dfe_torres(mu,neutral=False):
-    if neutral == False:
-        print('with BGS')
-        sregion = [fp11.GammaS(i, i+1, .07, -0.029426,0.184, coupled=True) for i in range(50)]+ \
-                  [fp11.GammaS(i, i+1, 0.13, -0.000518, 0.0415, coupled=True) for i in range(50)] + \
-                  [fp11.GammaS(i, i+1, .07, -0.029426, 0.184, coupled=True) for i in range(51,101)] + \
-                  [fp11.GammaS(i, i+1, 0.13, -0.000518, 0.0415, coupled=True) for i in range(51,101)]
-
-        nregion = [fp11.Region(i,i+1,0.8, coupled=True) for i in range(50)] + \
-                  [fp11.Region(50,51,1, coupled=True)] +\
-                  [fp11.Region(i,i+1,0.8, coupled=True) for i in range(51,101)]# 80 % of sites are neutral
-        # Mutation rates
-        mu_s = mu_n = rec = mu * 20000 *101
-        rates = [mu_s,mu_n,rec]
-    elif neutral== True:
-        print('neutral')
-        sregion = []
-        nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(101)]
-        # Mutation rates
-        mu_n = rec = mu * 20000 *101
-        rates = [mu_n,0,rec]
-    return(sregion,nregion,rates)
