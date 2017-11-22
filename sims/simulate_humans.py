@@ -78,6 +78,7 @@ p = {'nregions':nregion,
 'demography':burnin,
 }
 params = fp11.model_params.SlocusParams(**p)
+print('Generation start',humans.generation)
 
 # simulate until equilibrium
 wf.evolve(rng2, humans,params)

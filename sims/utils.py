@@ -15,14 +15,14 @@ import pickle
 def regions_human_dfe(mu,neutral=False):
     if neutral == False:
         print('with BGS')
-        sregion = [fp11.GammaS(50, 51, .07, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
-                  fp11.GammaS(50, 51, 0.13, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
+        sregion = [fp11.GammaS(50, 501, .07, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
+                  fp11.GammaS(50, 501, 0.13, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
                   ]
         nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(50)] + \
                   [fp11.Region(50,51,0.8, coupled=True)] +\
                   [fp11.Region(i,i+1,1, coupled=True) for i in range(51,101)]# 80 % of sites are neutral
         # Mutation rates
-        mu_s = mu_n = rec = mu * 20000 *101
+        mu_s = mu_n = rec = mu * 20000 *1001
         rates = [mu_s,mu_n,rec]
     elif neutral== True:
         print('neutral')
