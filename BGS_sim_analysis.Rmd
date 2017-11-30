@@ -18,6 +18,8 @@ library(tidyverse)
 library(ggridges)
 library(viridis)
 library(cowplot)
+orig_theme <- theme_set(theme_cowplot(font_size=20))
+
 ```
 
 ### Europeans
@@ -25,46 +27,52 @@ library(cowplot)
 For Europeans, we follow a slightly modified model of [Torres et al. 2017](http://www.biorxiv.org/content/early/2017/09/01/181859) but the gene model is as above. Our demographic model is 
 
 ```{r munge function}
-read_sim<-function(pidata,xidata,neutral=FALSE){
+read_sim<-function(pidata,xidata,tajdata,neutral=FALSE){
   #read data
   pi<-as.tibble(read.csv(pidata,header=T))
   pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
   xi<-as.tibble(read.csv(xidata,header=T)) 
   xi<-mutate(xi,stat=rep("xi",length(xi[,1])))
+  tajD <- as.tibble(read.csv(tajdata,header=T))
+  tajD<-mutate(tajD,stat=rep("tajD",length(tajD[,1])))
   #munge into single tibble of means
-  data<-rbind(xi,pi) %>%
-    `colnames<-`(c("gen", 1:21, "sim", "stat")) %>%
-    gather(window,value,2:22) %>% 
+  data<-rbind(xi,pi,tajD) %>%
+    `colnames<-`(c("gen", 1:101, "sim", "stat")) %>%
+    gather(window,value,2:102) %>% 
     group_by(gen,stat,window) %>%
-    summarize(mean_val=mean(value)) %>%
-    mutate(window=(as.numeric(window)-11)*10000*1.66e-6,mean_val=mean_val)
-    data=mutate(data,mean_val=if_else(window==0.00,mean_val*1.25,mean_val))
+    summarize(mean_val=mean(value,na.rm = T)) %>%
+    mutate(centimorgen=(as.numeric(window)-51)*20000*1.66e-6,mean_val=mean_val)
+    data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val*1.25,mean_val))
   if(neutral==TRUE){
-    data=mutate(data,mean_val=if_else(window==0.00,mean_val/1.25,mean_val))
+    data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val/1.25,mean_val))
   }
 
   return(data)
 }
-
-
+#neutral=TRUE
+#pidata <- "results/tennessen_neutral_pi.csv"
+#xidata <-  "results/tennessen_neutral_xi.csv"
+#tajdata <- "results/tennessen_neutral_tajD.csv"
 ```
 
 
 ```{r plot_fun}
 simplot<-function(somedata,mystat,label){
-  ggplot(filter(somedata,gen %% 100 <1,stat==mystat), aes(x=window, y=mean_val, group = gen,color=gen)) + 
+  ggplot(filter(somedata,stat==mystat), aes(x=centimorgen, y=mean_val, group = gen,color=gen)) + 
   scale_color_viridis(name='Generation') +   
   background_grid(major = "xy", minor = "none") +
-  geom_line() + 
-  ylab(label)  + xlab("cM") #+
+#  geom_smooth(se=F) + 
+    geom_line() +
+  ylab(label)  + xlab("Distance (cM)") #+
 #  scale_x_continuous(breaks = seq(-1.5,1.5,0.5))
 }
 ```
 
 ```{r}
 merge_sel_neutral <- function(sel_sim_data,neut_sim_data){
-  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','stat','window'))
-  merged$mean_val <- merged$mean_val.x/merged$mean_val.y
+  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','stat','window','centimorgen'))
+  merged <- mutate(merged,mean_val = if_else(stat=='tajD',mean_val.x-mean_val.y,mean_val.x/mean_val.y))
+  names(merged) <- c('gen', 'stat', 'window', 'centimorgen','bgs','neutral','mean_val')
   merged
 }
 
@@ -81,57 +89,207 @@ demog_torres <- mutate(demog_torres,model='torres')
 demog_ten <- read.csv('demographies/tennessen.csv')
 demog_ten <- mutate(demog_ten,model='tennessen')
 demog <- rbind(demog_torres,demog_ten)
-dem_plot <- ggplot(demog,aes(x=generation,y=N,color=model))+geom_line(size=2) + scale_y_log10()+ xlim(-0.1,1.25)
+
+anc_ext <- 0
+OOA_torres <-   0.437017*2
+euro_bneck_torres <- OOA_torres + 0.109481*2
+torres_events <- c(anc_ext,OOA_torres,euro_bneck_torres)
+torres_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck')
+
+OOA_ten <- 0.264196*2
+euro_bneck_ten <-OOA_ten+ 0.0763702*2
+finel_ext <-euro_bneck_ten+ 0.0502841*2
+tennessen_events <- c(anc_ext,OOA_ten,euro_bneck_ten,finel_ext)
+tennessen_event_sizes <- c(1.98*7310,1.98*7310,0.254609*7310,1.339863*7310)
+tennessen_event_end<- c(1e5,1e5,1e5,1e3)
+tennessen_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck','Final growth')
+
+#dem_plot <- 
+  ggplot(demog,aes(x=generation,y=N,color=model))+geom_line(size=2) + 
+    scale_y_log10()+ 
+    scale_color_discrete(breaks=c("tennessen", "torres"),labels=c('Tennessen et al.','Torres et al.'))+
+    # annotate tennessen
+    annotate("segment", x = tennessen_events, xend = tennessen_events, 
+             y = tennessen_event_end, yend = tennessen_event_sizes, 
+             size=1,alpha=0.6,arrow=arrow()) +
+    annotate("text", x = tennessen_events,  y = tennessen_event_end,
+             label=tennessen_event_names,
+             angle=c(90,90,90,0),hjust=0,vjust=c(0.5,0.5,0.5,1)) +
+    labs(x=expression(paste('Generation (x ',N[anc],')')),y= "Population size",color='Demography')
+      xlim(-0.1,1.25)
 
 ```
 ## Tennessen
 
 ```{r}
 
-tennessen_neutral <-read_sim("results/tennessen_neutral_pi.csv","results/tennessen_neutral_xi.csv",neutral=TRUE)
-simplot(tennessen_neutral,"pi",expression(bar(pi)))
-tennessen_bgs <-read_sim("results/tennessen_bgs_pi.csv","results/tennessen_bgs_xi.csv",neutral=FALSE)
-simplot(tennessen_bgs,"pi",expression(bar(pi)))
+tennessen_neutral <-read_sim("results/tennessen_neutral_pi.csv",
+                             "results/tennessen_neutral_xi.csv",
+                             "results/tennessen_neutral_tajD.csv",
+                             neutral=TRUE)
+#tennessen_neutral <-read_sim("results/1_neutral_pi.csv","results/1_neutral_xi.csv",neutral=TRUE)
+
+simplot(tennessen_neutral,"tajD",expression(bar(pi)))
+tennessen_bgs <-read_sim("results/tennessen_bgs_pi.csv",
+                         "results/tennessen_bgs_xi.csv",
+                         "results/tennessen_bgs_tajD.csv",
+                         neutral=FALSE)
+#tennessen_bgs <-read_sim("results/1_bgs_pi.csv","results/1_bgs_xi.csv",neutral=FALSE)
+simplot(tennessen_bgs,"xi",expression(bar(pi)))
+
+filter(tennessen,stat=='xi',mean_val<0.8)
 
 tennessen <- merge_sel_neutral(tennessen_bgs,tennessen_neutral)
-tennessen <- mutate(tennessen,gen=as.numeric(gen)/7310)
-simplot(tennessen,"pi",expression(bar(pi)/bar(pi)[neut]))
-
-simplot(tennessen,"xi",expression(bar(xi)/bar(xi)[neut]))
+#tennessen <- mutate(tennessen,gen=as.numeric(gen)/7310)
+legend <- get_legend(simplot(tennessen,"pi",expression(bar(pi)/bar(pi)[neut]))+
+                       theme(legend.key.height= unit(2, "cm"),legend.title = element_text(size=16),legend.text = element_text(size=11)) +
+                       scale_color_viridis(name='Generation',breaks = tennessen_events, labels=tennessen_event_names)
+                     )
+plot_grid(
+plot_grid(
+simplot(tennessen,"pi",expression(bar(pi)/bar(pi)[neut]))+theme(legend.position='none'),
+simplot(tennessen,"xi",expression(bar(xi)/bar(xi)[neut]))+theme(legend.position="none"),
+simplot(tennessen,"tajD",expression(bar(D)-bar(D)[neut]))+theme(legend.position="none"),
+ncol = 1,
+align = 'hv'),
+legend, rel_widths = c(85,15))
+ggsave('figures/region_summary_tennessen.pdf',width = 12,heigh=9)
 
 comb <- tennessen %>%
-  filter(window==0)
+  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat%in%c('pi','xi')) %>%
+  mutate(centimorgen=abs(centimorgen)) %>%
+  group_by(centimorgen,gen,stat) %>%
+  summarise(mean_val=mean(mean_val))
 start_val <- comb %>%
-  filter(gen<=min(gen))
-div_ten <- ggplot(comb,aes(gen,mean_val,color=stat)) +geom_line(size=1.5) +
-  geom_hline(yintercept = start_val$mean_val) +
-  labs(x='Generation',y=expression(x/x[neut]),color='Statistics') + xlim(-0.1,1.25)
+  filter(gen==min(comb$gen))
+
+ggplot(comb,aes(gen,mean_val,color=stat)) +
+  geom_line(size=1.5) +
+  geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
+  labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics', 
+       caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes') + 
+#  xlim(-0.1,1.25) +
+  facet_grid(.~centimorgen) +
+  geom_vline(xintercept = tennessen_events, size=0.5, alpha=0.2) +
+   scale_color_manual(values=c("#999999", "#E69F00"), 
+                       breaks=c("pi", "xi"),
+                       labels=c(expression(bar(pi)),expression(bar(xi)))) +
+  theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
+        strip.text.y = element_text(angle = 0,hjust = 0),
+        plot.caption=element_text(size=12,hjust = 0))
+
+ggsave('figures/points_distance_summary_tennessen.pdf',width = 16)
 ```
 
 ## Torres
+
 ```{r}
-torres_neutral <-read_sim("results/torres_neutral_pi.csv","results/torres_neutral_xi.csv",neutral=TRUE)
-simplot(torres_neutral,"xi",expression(bar(pi)))
-torres_bgs <-read_sim("results/torres_bgs_pi.csv","results/torres_bgs_xi.csv",neutral=FALSE)
-simplot(torres_bgs,"pi",expression(bar(pi)))
+torres_neutral <-read_sim("results/torres_neutral_pi.csv",
+                             "results/torres_neutral_xi.csv",
+                             "results/torres_neutral_tajD.csv",
+                             neutral=TRUE)
+#torres_neutral <-read_sim("results/1_neutral_pi.csv","results/1_neutral_xi.csv",neutral=TRUE)
+
+simplot(torres_neutral,"pi",expression(bar(pi)))
+torres_bgs <-read_sim("results/torres_bgs_pi.csv",
+                         "results/torres_bgs_xi.csv",
+                         "results/torres_bgs_tajD.csv",
+                         neutral=FALSE)
+#torres_bgs <-read_sim("results/1_bgs_pi.csv","results/1_bgs_xi.csv",neutral=FALSE)
+tail(torres_bgs)
+simplot(torres_bgs,"xi",expression(bar(pi)))
+
+filter(torres,stat=='xi',mean_val<0.8)
 
 torres <- merge_sel_neutral(torres_bgs,torres_neutral)
-torres <- mutate(torres,gen=as.numeric(gen)/18448)
-
-simplot(torres,"pi",expression(bar(pi)/bar(pi)[neut]))
-simplot(torres,"xi",expression(bar(xi)/bar(xi)[neut]))
-
+#torres <- mutate(torres,gen=as.numeric(gen)/7310)
+legend <- get_legend(simplot(torres,"pi",expression(bar(pi)/bar(pi)[neut]))+
+                       theme(legend.key.height= unit(2, "cm"),legend.title = element_text(size=16),legend.text = element_text(size=11)) +
+                       scale_color_viridis(name='Generation',breaks = torres_events, labels=torres_event_names)
+                     )
+plot_grid(
+plot_grid(
+simplot(torres,"pi",expression(bar(pi)/bar(pi)[neut]))+theme(legend.position='none'),
+simplot(torres,"xi",expression(bar(xi)/bar(xi)[neut]))+theme(legend.position="none"),
+simplot(torres,"tajD",expression(bar(D)-bar(D)[neut]))+theme(legend.position="none"),
+ncol = 1,
+align = 'hv'),
+legend, rel_widths = c(85,15))
+ggsave('figures/region_summary_torres.pdf',width = 12,heigh=9)
 
 comb <- torres %>%
-  filter(window==0.0332)
+  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat%in%c('pi','xi')) %>%
+  mutate(centimorgen=abs(centimorgen)) %>%
+  group_by(centimorgen,gen,stat) %>%
+  summarise(mean_val=mean(mean_val))
 start_val <- comb %>%
-  filter(gen<=-0.00542064)
-div_torres <- ggplot(comb,aes(gen,mean_val,color=stat)) +geom_line(size=1.5) +
-  geom_hline(yintercept = start_val$mean_val) +
-  labs(x='Generation',y=expression(x/x[neut]),color='Statistics')+ xlim(-0.1,1.25)
+  filter(gen==min(comb$gen))
+
+ggplot(comb,aes(gen,mean_val,color=stat)) +
+  geom_line(size=1.5) +
+  geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
+  labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics', 
+       caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes') + 
+  xlim(-0.1,1.25) +
+  facet_grid(.~centimorgen) +
+  geom_vline(xintercept = torres_events, size=0.5, alpha=0.2) +
+   scale_color_manual(values=c("#999999", "#E69F00"), 
+                       breaks=c("pi", "xi"),
+                       labels=c(expression(bar(pi)),expression(bar(xi)))) +
+  theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
+        strip.text.y = element_text(angle = 0,hjust = 0),
+        plot.caption=element_text(size=12,hjust = 0))
+
+ggsave('figures/points_distance_summary_torres.pdf',width = 16)
 ```
 
+# Plotting original values 
 ```{r}
-plot_grid(dem_plot,div_ten,div_torres,ncol = 1,align = 'hv')
-ggsave('results/human_pi_xi.pdf')
+plot_over_time <- function(data,events,stats){
+
+  comb <- data %>%
+  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat==stats) %>%
+  mutate(centimorgen=abs(centimorgen)) %>%
+  group_by(centimorgen,gen,stat) %>%
+  summarise(neutral=mean(neutral),bgs=mean(bgs)) %>%
+  gather(selection,value,bgs,neutral) 
+
+start_val <- comb %>%
+  filter(gen==min(comb$gen))
+stats_label <- c(expression(bar(stats)))
+ggplot(comb,aes(gen,value,color=selection)) +
+  geom_line(size=1.5) +
+  geom_hline(data=data.frame(yint=start_val$value,centimorgen=start_val$centimorgen,sel=start_val$selection),aes(yintercept =yint,color=sel))+
+  labs(x=expression(paste('Generation (x ',N[anc],')')),y=stats,color='Selection')+
+  facet_grid(.~centimorgen) +
+  geom_vline(xintercept = events, size=0.5, alpha=0.2) +
+   scale_color_manual(values=alpha(c("#ef8a62", "#67a9cf"),.9), 
+                       breaks=c("neutral", "bgs"),
+                       labels=c('Neutral','BGS')) +
+  scale_x_continuous(breaks = seq(0,2,0.5))+
+  theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
+        strip.text.y = element_text(angle = 0,hjust = 0),
+        plot.caption=element_text(size=12,hjust = 0))
+}
+
+legend <- get_legend(plot_over_time(tennessen,tennessen_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(tennessen,tennessen_events,'pi')+theme(legend.position='none'),
+plot_over_time(tennessen,tennessen_events,'xi')+theme(legend.position='none'),
+plot_over_time(tennessen,tennessen_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/origVal_distance_summary_tennessen.pdf',width = 16)
+
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(torres,torres_events,'pi')+theme(legend.position='none'),
+plot_over_time(torres,torres_events,'xi')+theme(legend.position='none'),
+plot_over_time(torres,torres_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+ggsave('figures/origVal_distance_summary_torres.pdf',width = 16)
+
 ```

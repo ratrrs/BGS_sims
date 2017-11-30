@@ -12,6 +12,7 @@ model = sys.argv[2]#'tennessen'
 def combine_results(input_dir,stats,selection,model):
     df_list = []
     for file in os.listdir(input_dir+ os.sep + model):
+        print(file)
         if file.endswith("%s_%s.csv"%(selection,stats)):
             df_list.append(pd.read_csv(input_dir+os.sep+model+os.sep+file))
     combined = pd.concat(df_list)

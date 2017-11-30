@@ -12,15 +12,30 @@ import sys
 import pickle
 
 
-def regions_human_dfe(mu,neutral=False):
+def regions_dfe(species='human',neutral=False):
+    if species == 'human':
+        mu = 1.66e-8
+    elif species == 'maize':
+        mu = 3.0e-7
+    elif species == 'generic':
+        mu = 1e-8
+
+
     if neutral == False:
         print('with BGS')
-        sregion = [fp11.GammaS(50, 51, .07, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
-                  fp11.GammaS(50, 51, 0.13, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
-                  ]
+        if species == 'human' or species == 'generic':
+
+            sregion = [fp11.GammaS(50, 51, .07, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
+                      fp11.GammaS(50, 51, 0.13, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
+                      ]
+        elif species =='maize':
+            sregion = [fp11.GammaS(50, 51, .2, -0.083, 0.1514, h=1.0, coupled=True)]
+
+
         nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(50)] + \
                   [fp11.Region(50,51,0.8, coupled=True)] +\
                   [fp11.Region(i,i+1,1, coupled=True) for i in range(51,101)]# 80 % of sites are neutral
+
         # Mutation rates
         mu_s = mu_n = rec = mu * 20000 *101
         rates = [mu_s,mu_n,rec]
@@ -32,6 +47,7 @@ def regions_human_dfe(mu,neutral=False):
         mu_n = rec = mu * 20000 *101
         rates = [mu_n,0,rec]
     return(sregion,nregion,rates)
+
 
 
 def get_demography(path):
@@ -68,7 +84,7 @@ class neutral_div:
     def __call__(self, pop):
         rng3 = fp11.GSLrng(np.random.randint(420000))
         if self.counter % 100 == 0  or (pop.generation==self.final):
-            print(pop.generation)
+ #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
             samp = fp11.sampling.sample_separate(rng3, pop, 1000, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
@@ -82,4 +98,10 @@ class neutral_div:
         self.counter += 1
 
 
-
+class track_burnin:
+    def __init__(self):
+        self.counter = 1
+    def __call__(self, pop):
+        if self.counter % 1000 == 0:
+            print(pop.generation)
+        self.counter += 1
