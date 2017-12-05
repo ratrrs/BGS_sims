@@ -16,7 +16,7 @@ Nstart = 10000
 
 ################## simulate neutral ############################
 
-sregion,nregion,rates = regions_dfe(species='generic',neutral = True)
+sregion,nregion,rates = regions_dfe(species='generic',neutral=True)
 
 # constant size for 10 N generations
 burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
@@ -75,7 +75,7 @@ for model in models:
 
 ################## simulate BGS ############################
 
-sregion,nregion,rates = regions_dfe(species='generic',neutral = False)
+sregion,nregion,rates = regions_dfe(species='generic',neutral=False)
 
 # constant size for 10 N generations
 burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)

@@ -1,17 +1,21 @@
 ---
 title: "Background selection in maize and humans"
 output:
-  html_document: default
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
   html_notebook: default
   pdf_document: default
 ---
 
 ```{r setup}
 knitr::opts_knit$set(root.dir = '~/Documents/bgs_sims/')
+knitr::opts_chunk$set(fig.width=16) 
 ```
 
 
-#Boring Libraries and functions
+#Libraries and functions
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -22,12 +26,11 @@ orig_theme <- theme_set(theme_cowplot(font_size=20))
 
 ```
 
-### Europeans
 
-For Europeans, we follow a slightly modified model of [Torres et al. 2017](http://www.biorxiv.org/content/early/2017/09/01/181859) but the gene model is as above. Our demographic model is 
+## Data preparation functions
 
 ```{r munge function}
-read_sim<-function(pidata,xidata,tajdata,neutral=FALSE){
+read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE){
   #read data
   pi<-as.tibble(read.csv(pidata,header=T))
   pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
@@ -41,7 +44,7 @@ read_sim<-function(pidata,xidata,tajdata,neutral=FALSE){
     gather(window,value,2:102) %>% 
     group_by(gen,stat,window) %>%
     summarize(mean_val=mean(value,na.rm = T)) %>%
-    mutate(centimorgen=(as.numeric(window)-51)*20000*1.66e-6,mean_val=mean_val)
+    mutate(centimorgen=(as.numeric(window)-51)*20000*mu*100 ,mean_val=mean_val)
     data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val*1.25,mean_val))
   if(neutral==TRUE){
     data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val/1.25,mean_val))
@@ -56,6 +59,19 @@ read_sim<-function(pidata,xidata,tajdata,neutral=FALSE){
 ```
 
 
+
+Merge neutral and selected values
+```{r}
+merge_sel_neutral <- function(sel_sim_data,neut_sim_data){
+  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','stat','window','centimorgen'))
+  merged <- mutate(merged,mean_val = if_else(stat=='tajD',mean_val.x-mean_val.y,mean_val.x/mean_val.y))
+  names(merged) <- c('gen', 'stat', 'window', 'centimorgen','bgs','neutral','mean_val')
+  merged
+}
+```
+
+## Plot functions
+Plot selection landscape
 ```{r plot_fun}
 simplot<-function(somedata,mystat,label){
   ggplot(filter(somedata,stat==mystat), aes(x=centimorgen, y=mean_val, group = gen,color=gen)) + 
@@ -66,96 +82,42 @@ simplot<-function(somedata,mystat,label){
   ylab(label)  + xlab("Distance (cM)") #+
 #  scale_x_continuous(breaks = seq(-1.5,1.5,0.5))
 }
-```
 
-```{r}
-merge_sel_neutral <- function(sel_sim_data,neut_sim_data){
-  merged <- merge(sel_sim_data,neut_sim_data,by=c('gen','stat','window','centimorgen'))
-  merged <- mutate(merged,mean_val = if_else(stat=='tajD',mean_val.x-mean_val.y,mean_val.x/mean_val.y))
-  names(merged) <- c('gen', 'stat', 'window', 'centimorgen','bgs','neutral','mean_val')
-  merged
+simplot_grid <- function(somedata,events,event_names,ratio=TRUE){
+  if (ratio == TRUE){
+    
+    pi_lab <-  expression(bar(pi)/bar(pi)[neut])
+    xi_lab <- expression(bar(xi)/bar(xi)[neut])
+    d_lab <- expression(bar(D)-bar(D)[neut])
+  }
+  else{
+    pi_lab <- expression(bar(pi))
+    xi_lab <- expression(bar(xi))
+    d_lab <- expression(bar(D))
+  }
+legend <- get_legend(simplot(somedata,"pi",expression(bar(pi)/bar(pi)[neut]))+
+                       theme(legend.key.height= unit(2, "cm"),
+                             legend.title = element_text(size=16),
+                             legend.text = element_text(size=11)) +
+                       scale_color_viridis(name='Generation',breaks = events, labels=event_names)
+                     )
+plot_grid(
+plot_grid(
+simplot(somedata,"pi",pi_lab)+theme(legend.position='none'),
+simplot(somedata,"xi",xi_lab)+theme(legend.position="none"),
+simplot(somedata,"tajD",d_lab)+theme(legend.position="none"),
+ncol = 1,
+align = 'hv'),
+legend, rel_widths = c(85,15))
 }
 
 ```
 
-
-```{r}
-setwd('~/Documents/bgs_sims/')
-```
-
-```{r}
-demog_torres <- read.csv('demographies/torres.csv')
-demog_torres <- mutate(demog_torres,model='torres')
-demog_ten <- read.csv('demographies/tennessen.csv')
-demog_ten <- mutate(demog_ten,model='tennessen')
-demog <- rbind(demog_torres,demog_ten)
-
-anc_ext <- 0
-OOA_torres <-   0.437017*2
-euro_bneck_torres <- OOA_torres + 0.109481*2
-torres_events <- c(anc_ext,OOA_torres,euro_bneck_torres)
-torres_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck')
-
-OOA_ten <- 0.264196*2
-euro_bneck_ten <-OOA_ten+ 0.0763702*2
-finel_ext <-euro_bneck_ten+ 0.0502841*2
-tennessen_events <- c(anc_ext,OOA_ten,euro_bneck_ten,finel_ext)
-tennessen_event_sizes <- c(1.98*7310,1.98*7310,0.254609*7310,1.339863*7310)
-tennessen_event_end<- c(1e5,1e5,1e5,1e3)
-tennessen_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck','Final growth')
-
-#dem_plot <- 
-  ggplot(demog,aes(x=generation,y=N,color=model))+geom_line(size=2) + 
-    scale_y_log10()+ 
-    scale_color_discrete(breaks=c("tennessen", "torres"),labels=c('Tennessen et al.','Torres et al.'))+
-    # annotate tennessen
-    annotate("segment", x = tennessen_events, xend = tennessen_events, 
-             y = tennessen_event_end, yend = tennessen_event_sizes, 
-             size=1,alpha=0.6,arrow=arrow()) +
-    annotate("text", x = tennessen_events,  y = tennessen_event_end,
-             label=tennessen_event_names,
-             angle=c(90,90,90,0),hjust=0,vjust=c(0.5,0.5,0.5,1)) +
-    labs(x=expression(paste('Generation (x ',N[anc],')')),y= "Population size",color='Demography')
-      xlim(-0.1,1.25)
-
-```
-## Tennessen
-
+Function to plot ratios over time and by genetic distance
 ```{r}
 
-tennessen_neutral <-read_sim("results/tennessen_neutral_pi.csv",
-                             "results/tennessen_neutral_xi.csv",
-                             "results/tennessen_neutral_tajD.csv",
-                             neutral=TRUE)
-#tennessen_neutral <-read_sim("results/1_neutral_pi.csv","results/1_neutral_xi.csv",neutral=TRUE)
-
-simplot(tennessen_neutral,"tajD",expression(bar(pi)))
-tennessen_bgs <-read_sim("results/tennessen_bgs_pi.csv",
-                         "results/tennessen_bgs_xi.csv",
-                         "results/tennessen_bgs_tajD.csv",
-                         neutral=FALSE)
-#tennessen_bgs <-read_sim("results/1_bgs_pi.csv","results/1_bgs_xi.csv",neutral=FALSE)
-simplot(tennessen_bgs,"xi",expression(bar(pi)))
-
-filter(tennessen,stat=='xi',mean_val<0.8)
-
-tennessen <- merge_sel_neutral(tennessen_bgs,tennessen_neutral)
-#tennessen <- mutate(tennessen,gen=as.numeric(gen)/7310)
-legend <- get_legend(simplot(tennessen,"pi",expression(bar(pi)/bar(pi)[neut]))+
-                       theme(legend.key.height= unit(2, "cm"),legend.title = element_text(size=16),legend.text = element_text(size=11)) +
-                       scale_color_viridis(name='Generation',breaks = tennessen_events, labels=tennessen_event_names)
-                     )
-plot_grid(
-plot_grid(
-simplot(tennessen,"pi",expression(bar(pi)/bar(pi)[neut]))+theme(legend.position='none'),
-simplot(tennessen,"xi",expression(bar(xi)/bar(xi)[neut]))+theme(legend.position="none"),
-simplot(tennessen,"tajD",expression(bar(D)-bar(D)[neut]))+theme(legend.position="none"),
-ncol = 1,
-align = 'hv'),
-legend, rel_widths = c(85,15))
-ggsave('figures/region_summary_tennessen.pdf',width = 12,heigh=9)
-
-comb <- tennessen %>%
+plot_ratios <- function(data,events){
+comb <- data %>%
   filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat%in%c('pi','xi')) %>%
   mutate(centimorgen=abs(centimorgen)) %>%
   group_by(centimorgen,gen,stat) %>%
@@ -164,86 +126,28 @@ start_val <- comb %>%
   filter(gen==min(comb$gen))
 
 ggplot(comb,aes(gen,mean_val,color=stat)) +
-  geom_line(size=1.5) +
+  geom_smooth(method = 'loess',span=0.2)+
+#  geom_line(size=1.5) +
   geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
   labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics', 
        caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes') + 
 #  xlim(-0.1,1.25) +
   facet_grid(.~centimorgen) +
-  geom_vline(xintercept = tennessen_events, size=0.5, alpha=0.2) +
+  geom_vline(xintercept = events, size=0.5, alpha=0.2) +
    scale_color_manual(values=c("#999999", "#E69F00"), 
                        breaks=c("pi", "xi"),
                        labels=c(expression(bar(pi)),expression(bar(xi)))) +
   theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
         strip.text.y = element_text(angle = 0,hjust = 0),
-        plot.caption=element_text(size=12,hjust = 0))
+        plot.caption=element_text(size=12,hjust = 0)) +
+  scale_x_continuous(breaks=c(0,0.3,0.6,0.9,1.2))
 
-ggsave('figures/points_distance_summary_tennessen.pdf',width = 16)
+}
+
+
 ```
 
-## Torres
-
-```{r}
-torres_neutral <-read_sim("results/torres_neutral_pi.csv",
-                             "results/torres_neutral_xi.csv",
-                             "results/torres_neutral_tajD.csv",
-                             neutral=TRUE)
-#torres_neutral <-read_sim("results/1_neutral_pi.csv","results/1_neutral_xi.csv",neutral=TRUE)
-
-simplot(torres_neutral,"pi",expression(bar(pi)))
-torres_bgs <-read_sim("results/torres_bgs_pi.csv",
-                         "results/torres_bgs_xi.csv",
-                         "results/torres_bgs_tajD.csv",
-                         neutral=FALSE)
-#torres_bgs <-read_sim("results/1_bgs_pi.csv","results/1_bgs_xi.csv",neutral=FALSE)
-tail(torres_bgs)
-simplot(torres_bgs,"xi",expression(bar(pi)))
-
-filter(torres,stat=='xi',mean_val<0.8)
-
-torres <- merge_sel_neutral(torres_bgs,torres_neutral)
-#torres <- mutate(torres,gen=as.numeric(gen)/7310)
-legend <- get_legend(simplot(torres,"pi",expression(bar(pi)/bar(pi)[neut]))+
-                       theme(legend.key.height= unit(2, "cm"),legend.title = element_text(size=16),legend.text = element_text(size=11)) +
-                       scale_color_viridis(name='Generation',breaks = torres_events, labels=torres_event_names)
-                     )
-plot_grid(
-plot_grid(
-simplot(torres,"pi",expression(bar(pi)/bar(pi)[neut]))+theme(legend.position='none'),
-simplot(torres,"xi",expression(bar(xi)/bar(xi)[neut]))+theme(legend.position="none"),
-simplot(torres,"tajD",expression(bar(D)-bar(D)[neut]))+theme(legend.position="none"),
-ncol = 1,
-align = 'hv'),
-legend, rel_widths = c(85,15))
-ggsave('figures/region_summary_torres.pdf',width = 12,heigh=9)
-
-comb <- torres %>%
-  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat%in%c('pi','xi')) %>%
-  mutate(centimorgen=abs(centimorgen)) %>%
-  group_by(centimorgen,gen,stat) %>%
-  summarise(mean_val=mean(mean_val))
-start_val <- comb %>%
-  filter(gen==min(comb$gen))
-
-ggplot(comb,aes(gen,mean_val,color=stat)) +
-  geom_line(size=1.5) +
-  geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
-  labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics', 
-       caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes') + 
-  xlim(-0.1,1.25) +
-  facet_grid(.~centimorgen) +
-  geom_vline(xintercept = torres_events, size=0.5, alpha=0.2) +
-   scale_color_manual(values=c("#999999", "#E69F00"), 
-                       breaks=c("pi", "xi"),
-                       labels=c(expression(bar(pi)),expression(bar(xi)))) +
-  theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
-        strip.text.y = element_text(angle = 0,hjust = 0),
-        plot.caption=element_text(size=12,hjust = 0))
-
-ggsave('figures/points_distance_summary_torres.pdf',width = 16)
-```
-
-# Plotting original values 
+Function to plot absolute values over time and by genetic distance
 ```{r}
 plot_over_time <- function(data,events,stats){
 
@@ -271,7 +175,115 @@ ggplot(comb,aes(gen,value,color=selection)) +
         strip.text.y = element_text(angle = 0,hjust = 0),
         plot.caption=element_text(size=12,hjust = 0))
 }
+```
 
+
+```{r,eval=FALSE,include=FALSE}
+setwd('~/Documents/bgs_sims/')
+```
+
+
+
+# Demographies real models
+
+```{r}
+demog_torres <- read.csv('demographies/torres.csv')
+demog_torres <- mutate(demog_torres,model='torres')
+demog_ten <- read.csv('demographies/tennessen.csv')
+demog_ten <- mutate(demog_ten,model='tennessen')
+demog_maize <- read.csv('demographies/maize.csv')
+demog_maize <- mutate(demog_maize,model='maize')
+demog <- rbind(demog_torres,demog_ten,demog_maize)
+
+# Torres events
+anc_ext <- 0
+OOA_torres <-   0.437017*2
+euro_bneck_torres <- OOA_torres + 0.109481*2
+torres_events <- c(anc_ext,OOA_torres,euro_bneck_torres)
+torres_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck')
+torres_event_sizes <- c(2.10709*18449,2.10709*18449,0.322295*18449)
+torres_event_end<- c(1e5,1e5,2e3)
+
+# Tennessen events
+OOA_ten <- 0.264196*2
+euro_bneck_ten <-OOA_ten+ 0.0763702*2
+finel_ext <-euro_bneck_ten+ 0.0502841*2
+tennessen_events <- c(anc_ext,OOA_ten,euro_bneck_ten,finel_ext)
+tennessen_event_sizes <-  c(1.98*7310,1.98*7310,0.254609*7310,1.339863*7310)
+tennessen_event_end<- c(1e5,1e5,1e5,1e3)
+tennessen_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck','Final growth')
+
+# maize events
+maize_events <- c(0)
+maize_event_names <- c('Domestication bottleneck')
+```
+
+## Demography plot
+```{r}
+
+ggplot(demog,aes(x=generation,y=N,color=model))+geom_line(size=2) + 
+  scale_y_log10()+ 
+  scale_color_discrete(breaks=c("tennessen", "torres","maize"),labels=c('Tennessen et al.','Torres et al.','Bessinger et al.'))+
+  # annotate tennessen
+  annotate("segment", x = tennessen_events, xend = tennessen_events, 
+           y = tennessen_event_end, yend = tennessen_event_sizes, 
+           size=1,alpha=0.6,arrow=arrow()) +
+  annotate("text", x = tennessen_events,  y = tennessen_event_end,
+           label=tennessen_event_names,
+           angle=c(90,90,90,0),hjust=0,vjust=c(0.5,0.5,0.5,1)) +
+  # annotate torres
+  annotate("segment", x = torres_events, xend = torres_events, 
+           y = torres_event_end, yend = torres_event_sizes, 
+           size=1,alpha=0.6,arrow=arrow()) +
+  annotate("text", x = torres_events,  y = torres_event_end,
+           label=torres_event_names,
+           angle=c(90,90,0),hjust=0,vjust=c(0.5,0.5,1)) +
+  # annotate maize
+   annotate("segment", x = 0, xend = 0, 
+           y = 12278*0.04, yend = 12278, 
+           size=1,alpha=0.6,arrow=arrow()) +
+  annotate("text", x = 0,  y = 12278*0.04,
+           label='Domestication bottleneck',
+           angle=0,hjust=0,vjust=1) +
+  labs(x=expression(paste('Generation (x ',N[anc],')')),y= "Population size",color='Demography')
+ggsave('figures/annotated_demographies.pdf',width = 16)
+```
+
+
+
+# Europeans
+
+## Tennessen 
+### Neutral data
+```{r}
+
+tennessen_neutral <-read_sim("results/tennessen_neutral_pi.csv",
+                             "results/tennessen_neutral_xi.csv",
+                             "results/tennessen_neutral_tajD.csv",
+                             neutral=TRUE)
+
+simplot_grid(tennessen_neutral,tennessen_events,tennessen_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+tennessen_bgs <-read_sim("results/tennessen_bgs_pi.csv",
+                         "results/tennessen_bgs_xi.csv",
+                         "results/tennessen_bgs_tajD.csv",
+                         neutral=FALSE)
+
+simplot_grid(tennessen_bgs,tennessen_events,tennessen_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+tennessen <- merge_sel_neutral(tennessen_bgs,tennessen_neutral)
+```
+
+### Plot absolute values
+```{r,fig.height=12}
 legend <- get_legend(plot_over_time(tennessen,tennessen_events,'pi'))
 plot_grid(ncol=2,rel_widths = c(90,10),
 plot_grid(
@@ -281,8 +293,55 @@ plot_over_time(tennessen,tennessen_events,'tajD')+theme(legend.position='none'),
 nrow = 3,align = 'hv',axis = 'lb'),
 legend)
 
-ggsave('figures/origVal_distance_summary_tennessen.pdf',width = 16)
+ggsave('figures/origVal_distance_summary_tennessen.pdf',width = 16,height = 12)
 
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(tennessen,tennessen_events,tennessen_event_names,ratio = T)
+
+ggsave('figures/region_summary_tennessen.pdf',width = 12,heigh=9)
+
+plot_ratios(tennessen,tennessen_events)
+
+ggsave('figures/smooth_distance_summary_tennessen.pdf',width = 16,height = 7)
+```
+
+
+## Torres 
+### Neutral data
+```{r}
+
+torres_neutral <-read_sim("results/torres_neutral_pi.csv",
+                             "results/torres_neutral_xi.csv",
+                             "results/torres_neutral_tajD.csv",
+                             neutral=TRUE)
+
+simplot_grid(torres_neutral,torres_events,torres_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+torres_bgs <-read_sim("results/torres_bgs_pi.csv",
+                         "results/torres_bgs_xi.csv",
+                         "results/torres_bgs_tajD.csv",
+                         neutral=FALSE)
+
+simplot_grid(torres_bgs,torres_events,torres_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+torres <- merge_sel_neutral(torres_bgs,torres_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(torres,torres_events,'pi'))
 plot_grid(ncol=2,rel_widths = c(90,10),
 plot_grid(
 plot_over_time(torres,torres_events,'pi')+theme(legend.position='none'),
@@ -290,6 +349,654 @@ plot_over_time(torres,torres_events,'xi')+theme(legend.position='none'),
 plot_over_time(torres,torres_events,'tajD')+theme(legend.position='none'),
 nrow = 3,align = 'hv',axis = 'lb'),
 legend)
-ggsave('figures/origVal_distance_summary_torres.pdf',width = 16)
 
+ggsave('figures/origVal_distance_summary_torres.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(torres,torres_events,torres_event_names,ratio = T)
+
+ggsave('figures/region_summary_torres.pdf',width = 12,heigh=9)
+
+plot_ratios(torres,torres_events)
+
+ggsave('figures/smooth_distance_summary_torres.pdf',width = 16,height=7)
+```
+
+
+# Maize 
+### Neutral data
+```{r}
+
+maize_neutral <-read_sim("results/maize_neutral_pi.csv",
+                             "results/maize_neutral_xi.csv",
+                             "results/maize_neutral_tajD.csv",,mu=3e-8,
+                             neutral=TRUE)
+
+simplot_grid(maize_neutral,maize_events,maize_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+maize_bgs <-read_sim("results/maize_bgs_pi.csv",
+                         "results/maize_bgs_xi.csv",
+                         "results/maize_bgs_tajD.csv",mu=3e-8,
+                         neutral=FALSE)
+
+simplot_grid(maize_bgs,maize_events,maize_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+maize <- merge_sel_neutral(maize_bgs,maize_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(maize,maize_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(maize,maize_events,'pi')+theme(legend.position='none'),
+plot_over_time(maize,maize_events,'xi')+theme(legend.position='none'),
+plot_over_time(maize,maize_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/origVal_distance_summary_maize.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(maize,maize_events,maize_event_names,ratio = T)
+
+ggsave('figures/region_summary_maize.pdf',width = 12,heigh=9)
+
+plot_ratios(maize,maize_events)
+
+ggsave('figures/smooth_distance_summary_maize.pdf',width = 16,height=7)
+```
+
+
+
+# Generic models
+
+## model1 
+
+```{r}
+model1_events <- c(0,0.9)
+model1_event_names <- c(0,0.9)
+```
+
+
+
+### Neutral data
+```{r}
+
+model1_neutral <-read_sim("results/generic/model1_neutral_pi.csv",
+                             "results/generic/model1_neutral_xi.csv",
+                             "results/generic/model1_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model1_neutral,model1_events,model1_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model1_bgs <-read_sim("results/generic/model1_bgs_pi.csv",
+                         "results/generic/model1_bgs_xi.csv",
+                         "results/generic/model1_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model1_bgs,model1_events,model1_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model1 <- merge_sel_neutral(model1_bgs,model1_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model1,model1_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model1,model1_events,'pi')+theme(legend.position='none'),
+plot_over_time(model1,model1_events,'xi')+theme(legend.position='none'),
+plot_over_time(model1,model1_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model1.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model1,model1_events,model1_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model1.pdf',width = 12,heigh=9)
+
+plot_ratios(model1,model1_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model1.pdf',width = 16,height=7)
+```
+
+
+
+
+## model2 
+```{r}
+model2_events <- c(0,0.5)
+model2_event_names <- c('Bottleneck','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model2_neutral <-read_sim("results/generic/model2_neutral_pi.csv",
+                             "results/generic/model2_neutral_xi.csv",
+                             "results/generic/model2_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model2_neutral,model2_events,model2_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model2_bgs <-read_sim("results/generic/model2_bgs_pi.csv",
+                         "results/generic/model2_bgs_xi.csv",
+                         "results/generic/model2_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model2_bgs,model2_events,model2_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model2 <- merge_sel_neutral(model2_bgs,model2_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model2,model2_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model2,model2_events,'pi')+theme(legend.position='none'),
+plot_over_time(model2,model2_events,'xi')+theme(legend.position='none'),
+plot_over_time(model2,model2_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model2.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model2,model2_events,model2_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model2.pdf',width = 12,heigh=9)
+
+plot_ratios(model2,model2_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model2.pdf',width = 16,height=7)
+```
+
+
+
+## model3 
+```{r}
+model3_events <- c(0,0.6667)
+model3_event_names <- c('Bottleneck','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model3_neutral <-read_sim("results/generic/model3_neutral_pi.csv",
+                             "results/generic/model3_neutral_xi.csv",
+                             "results/generic/model3_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model3_neutral,model3_events,model3_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model3_bgs <-read_sim("results/generic/model3_bgs_pi.csv",
+                         "results/generic/model3_bgs_xi.csv",
+                         "results/generic/model3_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model3_bgs,model3_events,model3_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model3 <- merge_sel_neutral(model3_bgs,model3_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model3,model3_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model3,model3_events,'pi')+theme(legend.position='none'),
+plot_over_time(model3,model3_events,'xi')+theme(legend.position='none'),
+plot_over_time(model3,model3_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model3.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model3,model3_events,model3_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model3.pdf',width = 12,heigh=9)
+
+plot_ratios(model3,model3_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model3.pdf',width = 16,height=7)
+```
+
+
+
+## model4 
+```{r}
+model4_events <- c(0,0.05,0.5250)
+model4_event_names <- c('Bottleneck','Growth','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model4_neutral <-read_sim("results/generic/model4_neutral_pi.csv",
+                             "results/generic/model4_neutral_xi.csv",
+                             "results/generic/model4_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model4_neutral,model4_events,model4_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model4_bgs <-read_sim("results/generic/model4_bgs_pi.csv",
+                         "results/generic/model4_bgs_xi.csv",
+                         "results/generic/model4_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model4_bgs,model4_events,model4_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model4 <- merge_sel_neutral(model4_bgs,model4_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model4,model4_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model4,model4_events,'pi')+theme(legend.position='none'),
+plot_over_time(model4,model4_events,'xi')+theme(legend.position='none'),
+plot_over_time(model4,model4_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model4.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model4,model4_events,model4_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model4.pdf',width = 12,heigh=9)
+
+plot_ratios(model4,model4_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model4.pdf',width = 16,height=7)
+```
+
+
+
+## model5 
+```{r}
+model5_events <- c(0,0.05,0.6833)
+model5_event_names <- c('Bottleneck','Growth','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model5_neutral <-read_sim("results/generic/model5_neutral_pi.csv",
+                             "results/generic/model5_neutral_xi.csv",
+                             "results/generic/model5_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model5_neutral,model5_events,model5_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model5_bgs <-read_sim("results/generic/model5_bgs_pi.csv",
+                         "results/generic/model5_bgs_xi.csv",
+                         "results/generic/model5_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model5_bgs,model5_events,model5_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model5 <- merge_sel_neutral(model5_bgs,model5_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model5,model5_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model5,model5_events,'pi')+theme(legend.position='none'),
+plot_over_time(model5,model5_events,'xi')+theme(legend.position='none'),
+plot_over_time(model5,model5_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model5.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model5,model5_events,model5_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model5.pdf',width = 12,heigh=9)
+
+plot_ratios(model5,model5_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model5.pdf',width = 16,height=7)
+```
+
+
+## model6 
+```{r}
+model6_events <- c(0.9,0.95)
+model6_event_names <- c('Bottleneck','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model6_neutral <-read_sim("results/generic/model6_neutral_pi.csv",
+                             "results/generic/model6_neutral_xi.csv",
+                             "results/generic/model6_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model6_neutral,model6_events,model6_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model6_bgs <-read_sim("results/generic/model6_bgs_pi.csv",
+                         "results/generic/model6_bgs_xi.csv",
+                         "results/generic/model6_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model6_bgs,model6_events,model6_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model6 <- merge_sel_neutral(model6_bgs,model6_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model6,model6_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model6,model6_events,'pi')+theme(legend.position='none'),
+plot_over_time(model6,model6_events,'xi')+theme(legend.position='none'),
+plot_over_time(model6,model6_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model6.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model6,model6_events,model6_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model6.pdf',width = 12,heigh=9)
+
+plot_ratios(model6,model6_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model6.pdf',width = 16,height=7)
+```
+
+
+
+## model7 
+```{r}
+model7_events <- c(0.9,0.9667)
+model7_event_names <- c('Bottleneck','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model7_neutral <-read_sim("results/generic/model7_neutral_pi.csv",
+                             "results/generic/model7_neutral_xi.csv",
+                             "results/generic/model7_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model7_neutral,model7_events,model7_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model7_bgs <-read_sim("results/generic/model7_bgs_pi.csv",
+                         "results/generic/model7_bgs_xi.csv",
+                         "results/generic/model7_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model7_bgs,model7_events,model7_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model7 <- merge_sel_neutral(model7_bgs,model7_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model7,model7_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model7,model7_events,'pi')+theme(legend.position='none'),
+plot_over_time(model7,model7_events,'xi')+theme(legend.position='none'),
+plot_over_time(model7,model7_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model7.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model7,model7_events,model7_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model7.pdf',width = 12,heigh=9)
+
+plot_ratios(model7,model7_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model7.pdf',width = 16,height=7)
+```
+
+
+
+## model8 
+```{r}
+model8_events <- c(0.9,0.95,0.9750)
+model8_event_names <- c('Bottleneck','Growth','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model8_neutral <-read_sim("results/generic/model8_neutral_pi.csv",
+                             "results/generic/model8_neutral_xi.csv",
+                             "results/generic/model8_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model8_neutral,model8_events,model8_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model8_bgs <-read_sim("results/generic/model8_bgs_pi.csv",
+                         "results/generic/model8_bgs_xi.csv",
+                         "results/generic/model8_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model8_bgs,model8_events,model8_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model8 <- merge_sel_neutral(model8_bgs,model8_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model8,model8_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model8,model8_events,'pi')+theme(legend.position='none'),
+plot_over_time(model8,model8_events,'xi')+theme(legend.position='none'),
+plot_over_time(model8,model8_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model8.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model8,model8_events,model8_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model8.pdf',width = 12,heigh=9)
+
+plot_ratios(model8,model8_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model8.pdf',width = 16,height=7)
+```
+
+
+## model9 
+```{r}
+model9_events <- c(0.9,0.95,0.9833)
+model9_event_names <- c('Bottleneck','Growth','Recovered')
+```
+
+
+
+### Neutral data
+```{r}
+
+model9_neutral <-read_sim("results/generic/model9_neutral_pi.csv",
+                             "results/generic/model9_neutral_xi.csv",
+                             "results/generic/model9_neutral_tajD.csv",mu=1e-8,
+                             neutral=TRUE)
+simplot_grid(model9_neutral,model9_events,model9_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model9_bgs <-read_sim("results/generic/model9_bgs_pi.csv",
+                         "results/generic/model9_bgs_xi.csv",
+                         "results/generic/model9_bgs_tajD.csv",mu=1e-8,
+                         neutral=FALSE)
+
+simplot_grid(model9_bgs,model9_events,model9_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model9 <- merge_sel_neutral(model9_bgs,model9_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model9,model9_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model9,model9_events,'pi')+theme(legend.position='none'),
+plot_over_time(model9,model9_events,'xi')+theme(legend.position='none'),
+plot_over_time(model9,model9_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model9.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model9,model9_events,model9_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model9.pdf',width = 12,heigh=9)
+
+plot_ratios(model9,model9_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model9.pdf',width = 16,height=7)
 ```

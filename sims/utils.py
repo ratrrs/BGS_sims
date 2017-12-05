@@ -28,24 +28,39 @@ def regions_dfe(species='human',neutral=False):
             sregion = [fp11.GammaS(50, 51, .07, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
                       fp11.GammaS(50, 51, 0.13, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
                       ]
+            nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(50)] + \
+                      [fp11.Region(50, 51, 0.8, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1, coupled=True) for i in range(51, 101)]  # 80 % of sites are neutral
+            # Mutation rate
+            mu_s = mu_n = rec = mu * 20000 * 101
+            rates = [mu_s, mu_n, rec]
+
         elif species =='maize':
-            sregion = [fp11.GammaS(50, 51, .2, -0.083, 0.1514, h=1.0, coupled=True)]
+            sregion = [fp11.GammaS(10, 11, .2, -0.083, 0.1514, h=1.0, coupled=True)]
 
+            nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(10)] + \
+                      [fp11.Region(10, 11, 0.8, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
 
-        nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(50)] + \
-                  [fp11.Region(50,51,0.8, coupled=True)] +\
-                  [fp11.Region(i,i+1,1, coupled=True) for i in range(51,101)]# 80 % of sites are neutral
+            # Mutation rate
+            mu_s = mu_n = rec = mu * 20000 * 21
+            rates = [mu_s,mu_n,rec]
 
-        # Mutation rates
-        mu_s = mu_n = rec = mu * 20000 *101
-        rates = [mu_s,mu_n,rec]
     elif neutral== True:
         print('neutral')
         sregion = []
-        nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(101)]
-        # Mutation rates
-        mu_n = rec = mu * 20000 *101
-        rates = [mu_n,0,rec]
+        if species == 'human' or species == 'generic':
+
+            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(101)]
+            # Mutation rates
+            mu_n = rec = mu * 20000 *101
+            rates = [mu_n,0,rec]
+        elif species == 'maize':
+            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
+            # Mutation rates
+            mu_n = rec = mu * 20000 *21
+            rates = [mu_n,0,rec]
+
     return(sregion,nregion,rates)
 
 
@@ -73,10 +88,11 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart):
-        self.pi = [['gen']+[i for i in range(101)]]
-        self.singleton = [['gen']+[i for i in range(101)]]
-        self.tajimasD = [['gen']+[i for i in range(101)]]
+    def __init__(self,set_gen,final,Nstart,nwindows=101):
+        self.nwindows = nwindows
+        self.pi = [['gen']+[i for i in range(self.nwindows)]]
+        self.singleton = [['gen']+[i for i in range(self.nwindows)]]
+        self.tajimasD = [['gen']+[i for i in range(self.nwindows)]]
         self.counter = 1
         self.final = final
         self.set_gen = set_gen
@@ -88,7 +104,7 @@ class neutral_div:
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
             samp = fp11.sampling.sample_separate(rng3, pop, 1000, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
-            w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=101.0)
+            w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=float(self.nwindows))
             window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
             window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
             window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)

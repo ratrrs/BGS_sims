@@ -20,6 +20,10 @@ print('Species:',species)
 print('Ancestral population size:',int(demog.item(0)))
 print('total generations', len(demog))
 
+if species == 'maize':
+    nwindows = 21
+else:
+    nwindows = 101
 
 ################## simulate neutral ############################
 
@@ -57,7 +61,8 @@ params = fp11.model_params.SlocusParams(**p)
 
 # add recorder that records pi, singletons and tajimas D
 set_gen = (10*Nstart)+200 # adjust generation labels without burnin and start
-rec1=neutral_div(set_gen,final=mypop.generation+len(demog)+200,Nstart=Nstart)
+
+rec1=neutral_div(set_gen,final=mypop.generation+len(demog)+200,Nstart=Nstart,nwindows=nwindows)
 
 
 wf.evolve(rng2, mypop,params,rec1)
@@ -105,7 +110,7 @@ params = fp11.model_params.SlocusParams(**p)
 
 # add recorder that records pi, singletons and tajimas D
 set_gen = (10*Nstart)+200 # adjust generation labels without burnin and start
-rec1=neutral_div(set_gen,final=mypop.generation+len(demog)+200,Nstart=Nstart)
+rec1=neutral_div(set_gen,final=mypop.generation+len(demog)+200,Nstart=Nstart,nwindows=nwindows)
 
 
 wf.evolve(rng2, mypop,params,rec1)
