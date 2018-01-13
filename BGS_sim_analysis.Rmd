@@ -30,7 +30,7 @@ orig_theme <- theme_set(theme_cowplot(font_size=20))
 ## Data preparation functions
 
 ```{r munge function}
-read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE){
+read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE,windows=101){
   #read data
   pi<-as.tibble(read.csv(pidata,header=T))
   pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
@@ -40,11 +40,11 @@ read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE){
   tajD<-mutate(tajD,stat=rep("tajD",length(tajD[,1])))
   #munge into single tibble of means
   data<-rbind(xi,pi,tajD) %>%
-    `colnames<-`(c("gen", 1:101, "sim", "stat")) %>%
-    gather(window,value,2:102) %>% 
+    `colnames<-`(c("gen", 1:windows, "sim", "stat")) %>%
+    gather(window,value,2:windows+1) %>% 
     group_by(gen,stat,window) %>%
     summarize(mean_val=mean(value,na.rm = T)) %>%
-    mutate(centimorgen=(as.numeric(window)-51)*20000*mu*100 ,mean_val=mean_val)
+    mutate(centimorgen=(as.numeric(window)-((windows-1)/2+1))*20000*mu*100 ,mean_val=mean_val)
     data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val*1.25,mean_val))
   if(neutral==TRUE){
     data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val/1.25,mean_val))
@@ -116,9 +116,11 @@ legend, rel_widths = c(85,15))
 Function to plot ratios over time and by genetic distance
 ```{r}
 
-plot_ratios <- function(data,events){
+plot_ratios <- function(data,events,windows=101){
+  center <- windows/2+.5
+  window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
 comb <- data %>%
-  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat%in%c('pi','xi')) %>%
+  filter(window%in%window_list,stat%in%c('pi','xi')) %>%
   mutate(centimorgen=abs(centimorgen)) %>%
   group_by(centimorgen,gen,stat) %>%
   summarise(mean_val=mean(mean_val))
@@ -147,12 +149,15 @@ ggplot(comb,aes(gen,mean_val,color=stat)) +
 
 ```
 
+
+
 Function to plot absolute values over time and by genetic distance
 ```{r}
-plot_over_time <- function(data,events,stats){
-
+plot_over_time <- function(data,events,stats,windows=101){
+  center <- windows/2+.5
+  window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
   comb <- data %>%
-  filter(window%in%c(51,51-10,51,51+10,51-20,51+20,1,101,51+5,51-5),stat==stats) %>%
+  filter(window%in%window_list,stat==stats) %>%
   mutate(centimorgen=abs(centimorgen)) %>%
   group_by(centimorgen,gen,stat) %>%
   summarise(neutral=mean(neutral),bgs=mean(bgs)) %>%
@@ -191,7 +196,7 @@ demog_torres <- read.csv('demographies/torres.csv')
 demog_torres <- mutate(demog_torres,model='torres')
 demog_ten <- read.csv('demographies/tennessen.csv')
 demog_ten <- mutate(demog_ten,model='tennessen')
-demog_maize <- read.csv('demographies/maize.csv')
+demog_maize <- read.csv('demographies/maize_018.csv')
 demog_maize <- mutate(demog_maize,model='maize')
 demog <- rbind(demog_torres,demog_ten,demog_maize)
 
@@ -214,9 +219,25 @@ tennessen_event_end<- c(1e5,1e5,1e5,1e3)
 tennessen_event_names <- c('Ancestral expansion','OoA bottleneck','Euro bottleneck','Final growth')
 
 # maize events
-maize_events <- c(0)
-maize_event_names <- c('Domestication bottleneck')
+maize_events <- c(0,0.12)
+maize_event_end<- c(12278*0.04,12278*0.5)
+maize_event_sizes <- c(12278,12278*2.98)
+maize_event_names <- c('Domestication bottleneck','Maize present')
 ```
+
+## Extrapolate maize demog
+
+```{r,eval=FALSE}
+x <- filter(demog_maize,generation>0)
+fit <- lm(log(x$N)~(x$generation))
+x$pred <- exp(fit$coefficients[1]+x$generation * fit$coefficients[2])
+ggplot()+
+  geom_line(data=x,aes(x=generation,y=pred),size=2) +
+  geom_line(data=x,aes(x=generation,y=N),color='red')
+
+exp(fit$coefficients[1]+0.18 * fit$coefficients[2])
+```
+
 
 ## Demography plot
 ```{r}
@@ -239,11 +260,11 @@ ggplot(demog,aes(x=generation,y=N,color=model))+geom_line(size=2) +
            label=torres_event_names,
            angle=c(90,90,0),hjust=0,vjust=c(0.5,0.5,1)) +
   # annotate maize
-   annotate("segment", x = 0, xend = 0, 
-           y = 12278*0.04, yend = 12278, 
+   annotate("segment", x = maize_events, xend = maize_events, 
+           y = maize_event_end, yend = maize_event_sizes, 
            size=1,alpha=0.6,arrow=arrow()) +
-  annotate("text", x = 0,  y = 12278*0.04,
-           label='Domestication bottleneck',
+  annotate("text", x = maize_events,  y = maize_event_end,
+           label=maize_event_names,
            angle=0,hjust=0,vjust=1) +
   labs(x=expression(paste('Generation (x ',N[anc],')')),y= "Population size",color='Demography')
 ggsave('figures/annotated_demographies.pdf',width = 16)
@@ -373,8 +394,8 @@ ggsave('figures/smooth_distance_summary_torres.pdf',width = 16,height=7)
 
 maize_neutral <-read_sim("results/maize_neutral_pi.csv",
                              "results/maize_neutral_xi.csv",
-                             "results/maize_neutral_tajD.csv",,mu=3e-8,
-                             neutral=TRUE)
+                             "results/maize_neutral_tajD.csv",mu=3e-8,
+                             neutral=TRUE,windows = 21)
 
 simplot_grid(maize_neutral,maize_events,maize_event_names,ratio = F)
 
@@ -385,7 +406,7 @@ simplot_grid(maize_neutral,maize_events,maize_event_names,ratio = F)
 maize_bgs <-read_sim("results/maize_bgs_pi.csv",
                          "results/maize_bgs_xi.csv",
                          "results/maize_bgs_tajD.csv",mu=3e-8,
-                         neutral=FALSE)
+                         neutral=FALSE,windows=21)
 
 simplot_grid(maize_bgs,maize_events,maize_event_names,ratio = F)
 
@@ -398,12 +419,12 @@ maize <- merge_sel_neutral(maize_bgs,maize_neutral)
 
 ### Plot absolute values
 ```{r, fig.height=12}
-legend <- get_legend(plot_over_time(maize,maize_events,'pi'))
+legend <- get_legend(plot_over_time(maize,maize_events,'pi',windows = 21))
 plot_grid(ncol=2,rel_widths = c(90,10),
 plot_grid(
-plot_over_time(maize,maize_events,'pi')+theme(legend.position='none'),
-plot_over_time(maize,maize_events,'xi')+theme(legend.position='none'),
-plot_over_time(maize,maize_events,'tajD')+theme(legend.position='none'),
+plot_over_time(maize,maize_events,'pi',windows = 21)+theme(legend.position='none'),
+plot_over_time(maize,maize_events,'xi',windows = 21)+theme(legend.position='none'),
+plot_over_time(maize,maize_events,'tajD',windows = 21)+theme(legend.position='none'),
 nrow = 3,align = 'hv',axis = 'lb'),
 legend)
 
@@ -418,7 +439,7 @@ simplot_grid(maize,maize_events,maize_event_names,ratio = T)
 
 ggsave('figures/region_summary_maize.pdf',width = 12,heigh=9)
 
-plot_ratios(maize,maize_events)
+plot_ratios(maize,maize_events,windows = 21)
 
 ggsave('figures/smooth_distance_summary_maize.pdf',width = 16,height=7)
 ```
