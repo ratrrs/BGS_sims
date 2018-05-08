@@ -22,6 +22,7 @@ library(tidyverse)
 library(ggridges)
 library(viridis)
 library(cowplot)
+library(wesanderson)
 orig_theme <- theme_set(theme_cowplot(font_size=20))
 
 ```
@@ -33,6 +34,7 @@ orig_theme <- theme_set(theme_cowplot(font_size=20))
 read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE,windows=101){
   #read data
   pi<-as.tibble(read.csv(pidata,header=T))
+  print(nrow(pi))
   pi<-mutate(pi,stat=rep("pi",length(pi[,1])))
   xi<-as.tibble(read.csv(xidata,header=T)) 
   xi<-mutate(xi,stat=rep("xi",length(xi[,1])))
@@ -125,14 +127,17 @@ comb <- data %>%
   group_by(centimorgen,gen,stat) %>%
   summarise(mean_val=mean(mean_val))
 start_val <- comb %>%
-  filter(gen==min(comb$gen))
+  filter(gen<0) %>%
+  group_by(stat,centimorgen) %>%
+  summarise(mean_val=mean(mean_val))
 
 ggplot(comb,aes(gen,mean_val,color=stat)) +
   geom_smooth(method = 'loess',span=0.2)+
 #  geom_line(size=1.5) +
   geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
-  labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics', 
-       caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes') + 
+  labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics'
+       #,caption ='Summary statistics at different distances (cM) from selected region.\nVertical lines mark demographic events. Horizontal lines denote value before demographic changes'
+       ) + 
 #  xlim(-0.1,1.25) +
   facet_grid(.~centimorgen) +
   geom_vline(xintercept = events, size=0.5, alpha=0.2) +
@@ -164,7 +169,9 @@ plot_over_time <- function(data,events,stats,windows=101){
   gather(selection,value,bgs,neutral) 
 
 start_val <- comb %>%
-  filter(gen==min(comb$gen))
+  filter(gen<0) %>%
+  group_by(stat,centimorgen,selection) %>%
+  summarise(value=mean(value))
 stats_label <- c(expression(bar(stats)))
 ggplot(comb,aes(gen,value,color=selection)) +
   geom_line(size=1.5) +
@@ -447,6 +454,46 @@ ggsave('figures/smooth_distance_summary_maize.pdf',width = 16,height=7)
 
 
 # Generic models
+
+## Demographies
+
+```{r}
+demog <- read.csv('demographies/generic_models.csv')
+demog <- demog %>%
+  gather(model,size,Model.1,Model.2,Model.3,Model.4,Model.5,Model.6,Model.7,Model.8,Model.9) %>%
+  mutate(bneck_length=case_when(model%in%c('Model.2','Model.3','Model.6','Model.7')~'1_Short',
+                                model%in%c('Model.4','Model.5','Model.8','Model.9')~'2_Long',
+                                model=='Model.1'~'Constant'),
+         bneck_strength=case_when(model%in%c('Model.2','Model.4','Model.6','Model.8')~'1_Weak',
+                                  model%in%c('Model.3','Model.5','Model.7','Model.9')~'2_Strong',
+                                  model=='Model.1'~'Constant'),
+         bneck_age = case_when(model%in%c('Model.6','Model.7','Model.8','Model.9')~'2_Late',
+                               model%in%c('Model.2','Model.3','Model.4','Model.5')~'1_Early',
+                               model=='Model.1'~'Constant'),
+         size=size/10000)
+demog <- filter(demog,model!='Model.1')
+
+length_labels <- c('1_Short' = 'Short','2_Long'='Long')
+strength_labels <- c('1_Weak'= 'Weak','2_Strong'='Strong')
+age_labels <- c('1_Early'='Old','2_Late'='Recent')
+
+
+ggplot(demog,aes(generation,size,color=model))+ 
+  geom_hline(yintercept = 1,color='grey80')+
+  geom_line(size=1.5) +
+  scale_y_log10(breaks=c(0,0.01,0.1,1,10)) +
+  theme(axis.text.x = element_text(angle = 45,hjust = 1,vjust = 1,face = 'bold')) +
+  labs(x=expression(paste('Generation (x ',N[anc],')')),
+       y=expression(paste('Population size (x ',N[anc],')')),
+       color='Model')+
+  facet_grid(bneck_age~bneck_length+bneck_strength,space = 'free',
+             labeller = labeller(bneck_length=as_labeller(length_labels),
+                                 bneck_age = as_labeller(age_labels),
+                                 bneck_strength = as_labeller(strength_labels)))+
+  theme(strip.background = element_blank(), strip.placement = "outside")
+
+ggsave('figures/generic_models/generic_demographies.pdf',width = 12)
+```
 
 ## model1 
 
