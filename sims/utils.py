@@ -99,13 +99,10 @@ class neutral_div:
         self.Nstart = Nstart
     def __call__(self, pop):
         rng3 = fp11.GSLrng(np.random.randint(420000))
-        if self.counter % 100 == 0  or (pop.generation==self.final):
+        if self.counter % 50 == 0  or (pop.generation==self.final):
  #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
-            if pop.N < 1000:
-            	ind_sampled = pop.N
-            else:
-            	ind_sampled = 1000
+            ind_sampled =  100
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
             w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=float(self.nwindows))

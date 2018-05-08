@@ -10,7 +10,7 @@
 #SBATCH --ntasks 1
 #SBATCH --exclude bigmem10
 
-
+echo replicate $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/tennessen/
 #srun python sims/simulate_real_life.py demographies/tennessen.csv results/tennessen/ human $SLURM_ARRAY_TASK_ID
@@ -21,5 +21,5 @@
 #mkdir -p results/maize/
 #srun python sims/simulate_real_life.py demographies/maize.csv results/maize/ maize $SLURM_ARRAY_TASK_ID
 
-mkdir -p results/generic/
-srun python sims/simulate_generic.py demographies/generic_models.csv results/generic/ $SLURM_ARRAY_TASK_ID
+mkdir -p results/generic2/
+srun python sims/simulate_generic.py demographies/generic_models.csv results/generic2/ $SLURM_ARRAY_TASK_ID
