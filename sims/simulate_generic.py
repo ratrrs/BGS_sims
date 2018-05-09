@@ -12,7 +12,7 @@ replicate = str(sys.argv[3]) #replicate name
 demographies = pd.read_csv(demog_file)
 models = np.array(demographies.columns[:-1])
 print(models)
-Nstart = 200
+Nstart = 20000
 
 
 ################## simulate neutral ############################
@@ -45,7 +45,7 @@ print('Generation',mypop.generation)
 
 ppop = pickle.dumps(mypop,-1)
 # pickle equilibirum population
-burnin_name = out_path + "burnins/burnin_%s.lzma9" % replicate
+burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
 with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
 
@@ -108,7 +108,10 @@ print('Generation',mypop.generation)
 
 
 ppop = pickle.dumps(mypop,-1)
-
+# pickle equilibirum population
+burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
+with lzma.open(burnin_name, "wb", preset=9) as f:
+    pickle.dump(mypop, f, -1)
 
 for model in models:
     print('simulating BGS in %s'%model)
