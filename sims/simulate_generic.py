@@ -2,6 +2,7 @@ from utils import *
 import pandas as pd
 import sys
 import os
+import lzma
 
 demog_file = sys.argv[1]#'../demographies/generic_models.csv'
 out_path = sys.argv[2]#'../results/generic/'
@@ -11,7 +12,7 @@ replicate = str(sys.argv[3]) #replicate name
 demographies = pd.read_csv(demog_file)
 models = np.array(demographies.columns[:-1])
 print(models)
-Nstart = 10000
+Nstart = 200
 
 
 ################## simulate neutral ############################
@@ -43,7 +44,10 @@ print('Generation',mypop.generation)
 
 
 ppop = pickle.dumps(mypop,-1)
-
+# pickle equilibirum population
+burnin_name = out_path + "burnins/burnin_%s.lzma9" % replicate
+with lzma.open(burnin_name, "wb", preset=9) as f:
+    pickle.dump(mypop, f, -1)
 
 for model in models:
     print(model)
@@ -53,6 +57,8 @@ for model in models:
     if not os.path.exists(model_path):
         os.makedirs(model_path)
     demog = demographies[model].as_matrix()
+    demog = demog[~np.isnan(demog)]
+    print(model,demog)
 
     #Unpickle to create a new pop:
     pop2 = pickle.loads(ppop)

@@ -470,7 +470,7 @@ demog <- demog %>%
          bneck_age = case_when(model%in%c('Model.6','Model.7','Model.8','Model.9')~'2_Late',
                                model%in%c('Model.2','Model.3','Model.4','Model.5')~'1_Early',
                                model=='Model.1'~'Constant'),
-         size=size/10000)
+         size=size)
 demog <- filter(demog,model!='Model.1')
 
 length_labels <- c('1_Short' = 'Short','2_Long'='Long')
@@ -479,12 +479,13 @@ age_labels <- c('1_Early'='Old','2_Late'='Recent')
 
 
 ggplot(demog,aes(generation,size,color=model))+ 
-  geom_hline(yintercept = 1,color='grey80')+
+  geom_hline(yintercept = 20000,color='grey80')+
   geom_line(size=1.5) +
-  scale_y_log10(breaks=c(0,0.01,0.1,1,10)) +
+#  geom_hline(yintercept = 400)+
+  scale_y_log10() +
   theme(axis.text.x = element_text(angle = 45,hjust = 1,vjust = 1,face = 'bold')) +
   labs(x=expression(paste('Generation (x ',N[anc],')')),
-       y=expression(paste('Population size (x ',N[anc],')')),
+       y='Population size',
        color='Model')+
   facet_grid(bneck_age~bneck_length+bneck_strength,space = 'free',
              labeller = labeller(bneck_length=as_labeller(length_labels),
