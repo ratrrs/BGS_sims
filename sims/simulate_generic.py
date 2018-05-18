@@ -11,7 +11,7 @@ replicate = str(sys.argv[3]) #replicate name
 
 demographies = pd.read_csv(demog_file)
 models = np.array(demographies.columns[:-1])
-print(models)
+#print(models)
 Nstart = 20000
 
 
@@ -58,7 +58,6 @@ for model in models:
         os.makedirs(model_path)
     demog = demographies[model].as_matrix()
     demog = demog[~np.isnan(demog)]
-    print(model,demog)
 
     #Unpickle to create a new pop:
     pop2 = pickle.loads(ppop)

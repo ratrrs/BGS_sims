@@ -24,19 +24,18 @@ def regions_dfe(species='human',neutral=False):
     if neutral == False:
         print('with BGS')
         if species == 'human' or species == 'generic':
-            weight_neut_neut_region = 1/101+0.8*1/101/100
-            weight_neut_sel_region = 1/101-0.8*1/100
-            sregion = [fp11.GammaS(50, 51, .33, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 7% of all mutations in this region
-                      fp11.GammaS(50, 51, 0.66, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 13% of all mutations in this region
+            sregion = [fp11.GammaS(50, 51, 1, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
+                      fp11.GammaS(50, 51, 2, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
-            nregion = [fp11.Region(i, i + 1, weight_neut_neut_region, coupled=True) for i in range(50)] + \
-                      [fp11.Region(50, 51, weight_neut_sel_region, coupled=True)] + \
-                      [fp11.Region(i, i + 1, weight_neut_neut_region, coupled=True) for i in range(51, 101)]  # 80 % of sites are neutral
+            nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(50)] + \
+                      [fp11.Region(50, 51, 1, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1., coupled=True) for i in range(51, 101)]  # 80 % of sites are neutral
             # Mutation rate
             rec = mu * 20000 * 101
             mu_s = mu * 20000 * 0.2
             mu_n = mu * 20000 * 100 + mu * 20000*0.8
-            rates = [mu_s, mu_n, rec]
+            print(mu_n)
+            rates = [mu_n, mu_s, rec]
 
         elif species =='maize':
             weight_neut_neut_region = 1/21+0.8*1/21/20
@@ -44,15 +43,15 @@ def regions_dfe(species='human',neutral=False):
 
             sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
 
-            nregion = [fp11.Region(i, i + 1, weight_neut_neut_region, coupled=True) for i in range(10)] + \
-                      [fp11.Region(10, 11, weight_neut_sel_region, coupled=True)] + \
-                      [fp11.Region(i, i + 1, weight_neut_neut_region, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
+            nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(10)] + \
+                      [fp11.Region(10, 11, .8, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
 
             # Mutation rate
             mu_s = mu * 20000 *0.2
             mu_n = mu * 20000 *20 + mu * 20000 * 0.8
             rec = mu * 20000 * 21
-            rates = [mu_s,mu_n,rec]
+            rates = [mu_n,mu_s,rec]
 
     elif neutral== True:
         print('neutral')
@@ -129,4 +128,10 @@ class track_burnin:
     def __call__(self, pop):
         if self.counter % 1000 == 0:
             print(pop.generation)
+            mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
+                                 i > 0 and j.neutral is True and j.g == pop.generation])
+            mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
+                                i > 0 and j.neutral is False and j.g == pop.generation])
+            print('neutral mutations:', mut_neut.sum())
+            print('selected mutations:', mut_sel.sum())
         self.counter += 1
