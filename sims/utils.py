@@ -24,29 +24,27 @@ def regions_dfe(species='human',neutral=False):
     if neutral == False:
         print('with BGS')
         if species == 'human' or species == 'generic':
-            sregion = [fp11.GammaS(50, 51, 1, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
-                      fp11.GammaS(50, 51, 2, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
+            sregion = [fp11.GammaS(25, 26, 1, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
+                      fp11.GammaS(25, 26, 2, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
-            nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(50)] + \
-                      [fp11.Region(50, 51, 1, coupled=True)] + \
-                      [fp11.Region(i, i + 1, 1., coupled=True) for i in range(51, 101)]  # 80 % of sites are neutral
+            nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(25)] + \
+                      [fp11.Region(25, 26, 0.8, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1., coupled=True) for i in range(26, 51)]  # 80 % of sites are neutral
+            print('Number of neutral regions:',len(nregion))
+            [print(i) for i in sregion]
             # Mutation rate
-            rec = mu * 20000 * 101
-            mu_s = mu * 20000 * 0.2
-            mu_n = mu * 20000 * 100 + mu * 20000*0.8
+            rec = mu * 20000 * 51
+            mu_s = mu * 20000 *.2
+            mu_n = mu * 20000 * 50 + mu * 20000 * 0.8
             print(mu_n)
             rates = [mu_n, mu_s, rec]
 
         elif species =='maize':
-            weight_neut_neut_region = 1/21+0.8*1/21/20
-            weight_neut_sel_region = 1/21-0.8*1/21
-
             sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
-
             nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(10)] + \
                       [fp11.Region(10, 11, .8, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
-
+            print('Number of neutral regions:',len(nregion))
             # Mutation rate
             mu_s = mu * 20000 *0.2
             mu_n = mu * 20000 *20 + mu * 20000 * 0.8
@@ -57,11 +55,11 @@ def regions_dfe(species='human',neutral=False):
         print('neutral')
         sregion = []
         if species == 'human' or species == 'generic':
-
-            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(101)]
+            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(51)]
             # Mutation rates
-            mu_n = rec = mu * 20000 *101
+            mu_n = rec = mu * 20000 *51
             rates = [mu_n,0,rec]
+
         elif species == 'maize':
             nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
             # Mutation rates
@@ -95,7 +93,7 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=101):
+    def __init__(self,set_gen,final,Nstart,nwindows=51):
         self.nwindows = nwindows
         self.pi = [['gen']+[i for i in range(self.nwindows)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows)]]
@@ -106,10 +104,10 @@ class neutral_div:
         self.Nstart = Nstart
     def __call__(self, pop):
         rng3 = fp11.GSLrng(np.random.randint(420000))
-        if self.counter % 50 == 0  or (pop.generation==self.final):
+        if self.counter % 100 == 0  or (pop.generation==self.final):
  #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
-            ind_sampled =  100
+            ind_sampled = 100
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
             w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=float(self.nwindows))
@@ -127,11 +125,10 @@ class track_burnin:
         self.counter = 1
     def __call__(self, pop):
         if self.counter % 1000 == 0:
-            print(pop.generation)
+  #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation])
+                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>25 and j.pos<26])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                i > 0 and j.neutral is False and j.g == pop.generation])
-            print('neutral mutations:', mut_neut.sum())
-            print('selected mutations:', mut_sel.sum())
+                                i > 0 and j.neutral is False and j.g == pop.generation and j.pos>25 and j.pos<26])
+            print(pop.generation,mut_neut.sum(), mut_sel.sum())
         self.counter += 1

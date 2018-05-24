@@ -39,15 +39,18 @@ params = fp11.model_params.SlocusParams(**p)
 burn_rec = track_burnin()
 # simulate until equilibrium
 wf.evolve(rng2, mypop,params,burn_rec)
-print('burnin done')
-print('Generation',mypop.generation)
 
 
-ppop = pickle.dumps(mypop,-1)
+
+
+#ppop = pickle.dumps(mypop,-1)
 # pickle equilibirum population
 burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
 with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
+
+print('burnin done')
+print('Generation',mypop.generation)
 
 for model in models:
     print(model)
@@ -60,8 +63,12 @@ for model in models:
     demog = demog[~np.isnan(demog)]
 
     #Unpickle to create a new pop:
-    pop2 = pickle.loads(ppop)
+    #pop2 = pickle.loads(ppop)
+
+    with lzma.open(burnin_name, 'rb') as f:
+        pop2 = pickle.load(f)
     print(mypop==pop2)
+    print(pop2.generation)
 
     p['demography'] = demog
     params = fp11.model_params.SlocusParams(**p)
@@ -106,21 +113,26 @@ print('burnin done')
 print('Generation',mypop.generation)
 
 
-ppop = pickle.dumps(mypop,-1)
+#ppop = pickle.dumps(mypop,-1)
 # pickle equilibirum population
 burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
 with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
+
 
 for model in models:
     print('simulating BGS in %s'%model)
     model_id = model.replace(" ", "").lower() +'/'
     model_path = out_path + model_id
     demog = demographies[model].as_matrix()
+    demog = demog[~np.isnan(demog)]
 
+    with lzma.open(burnin_name, 'rb') as f:
+        pop2 = pickle.load(f)
+    print(pop2.generation)
     #Unpickle to create a new pop:
-    pop2 = pickle.loads(ppop)
-    print(mypop==pop2)
+#    pop2 = pickle.loads(ppop)
+#    print(mypop==pop2)
 
     p['demography'] = demog
     params = fp11.model_params.SlocusParams(**p)
