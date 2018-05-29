@@ -24,18 +24,18 @@ def regions_dfe(species='human',neutral=False):
     if neutral == False:
         print('with BGS')
         if species == 'human' or species == 'generic':
-            sregion = [fp11.GammaS(25, 26, 1, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
-                      fp11.GammaS(25, 26, 2, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
+            sregion = [fp11.GammaS(25, 26, 1, -0.29426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
+                      fp11.GammaS(25, 26, 2, -0.00518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
-            nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(25)] + \
-                      [fp11.Region(25, 26, 0.8, coupled=True)] + \
-                      [fp11.Region(i, i + 1, 1., coupled=True) for i in range(26, 51)]  # 80 % of sites are neutral
+            nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(5)] + \
+                      [fp11.Region(5, 6, 0.8, coupled=True)] + \
+                      [fp11.Region(i, i + 1, 1., coupled=True) for i in range(6, 11)]  # 80 % of sites are neutral
             print('Number of neutral regions:',len(nregion))
             [print(i) for i in sregion]
             # Mutation rate
-            rec = mu * 20000 * 51
+            rec = mu * 20000 * 11
             mu_s = mu * 20000 *.2
-            mu_n = mu * 20000 * 50 + mu * 20000 * 0.8
+            mu_n = mu * 20000 * 10 + mu * 20000 * 0.8
             print(mu_n)
             rates = [mu_n, mu_s, rec]
 
@@ -50,14 +50,15 @@ def regions_dfe(species='human',neutral=False):
             mu_n = mu * 20000 *20 + mu * 20000 * 0.8
             rec = mu * 20000 * 21
             rates = [mu_n,mu_s,rec]
+            rates = [mu_n,mu_s,rec]
 
     elif neutral== True:
         print('neutral')
         sregion = []
         if species == 'human' or species == 'generic':
-            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(51)]
+            nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(11)]
             # Mutation rates
-            mu_n = rec = mu * 20000 *51
+            mu_n = rec = mu * 20000 *11
             rates = [mu_n,0,rec]
 
         elif species == 'maize':
@@ -93,7 +94,7 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=51):
+    def __init__(self,set_gen,final,Nstart,nwindows=11):
         self.nwindows = nwindows
         self.pi = [['gen']+[i for i in range(self.nwindows)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows)]]
@@ -110,7 +111,7 @@ class neutral_div:
             ind_sampled = 100
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
-            w = Windows(neutral_sample, window_size=1, step_len=1, starting_pos=0., ending_pos=float(self.nwindows))
+            w = Windows(neutral_sample, window_size=0.1, step_len=0.1, starting_pos=0., ending_pos=float(self.nwindows))
             window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
             window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
             window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)
@@ -127,8 +128,8 @@ class track_burnin:
         if self.counter % 1000 == 0:
   #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>25 and j.pos<26])
+                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>5 and j.pos<6])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                i > 0 and j.neutral is False and j.g == pop.generation and j.pos>25 and j.pos<26])
+                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>5 and j.pos<6])
             print(pop.generation,mut_neut.sum(), mut_sel.sum())
         self.counter += 1

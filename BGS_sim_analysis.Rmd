@@ -43,15 +43,11 @@ read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE,windows=101){
   #munge into single tibble of means
   data<-rbind(xi,pi,tajD) %>%
     `colnames<-`(c("gen", 1:windows, "sim", "stat")) %>%
-    gather(window,value,2:windows+1) %>% 
+    gather(window,value,-gen,-stat,-sim) %>% 
     group_by(gen,stat,window) %>%
     summarize(mean_val=mean(value,na.rm = T)) %>%
-    mutate(centimorgen=(as.numeric(window)-((windows-1)/2+1))*20000*mu*100 ,mean_val=mean_val)
-    data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val*1.25,mean_val))
-  if(neutral==TRUE){
-    data=mutate(data,mean_val=if_else(centimorgen==0.00,mean_val/1.25,mean_val))
-  }
-
+    mutate(centimorgen=(as.numeric(window)-((windows-1)/2+1))*20000*mu*100 ,mean_val=mean_val)%>%
+    mutate(mean_val=ifelse(neutral==FALSE & centimorgen==0,mean_val*1.25,mean_val))
   return(data)
 }
 #neutral=TRUE
@@ -118,7 +114,7 @@ legend, rel_widths = c(85,15))
 Function to plot ratios over time and by genetic distance
 ```{r}
 
-plot_ratios <- function(data,events,windows=101){
+plot_ratios <- function(data,events,windows=51){
   center <- windows/2+.5
   window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
 comb <- data %>%
@@ -158,7 +154,7 @@ ggplot(comb,aes(gen,mean_val,color=stat)) +
 
 Function to plot absolute values over time and by genetic distance
 ```{r}
-plot_over_time <- function(data,events,stats,windows=101){
+plot_over_time <- function(data,events,stats,windows=51){
   center <- windows/2+.5
   window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
   comb <- data %>%
@@ -511,7 +507,7 @@ model1_event_names <- c(0,0.9)
 model1_neutral <-read_sim("results/generic/model1_neutral_pi.csv",
                              "results/generic/model1_neutral_xi.csv",
                              "results/generic/model1_neutral_tajD.csv",mu=1e-8,
-                             neutral=TRUE)
+                             neutral=TRUE,windows = 51)
 simplot_grid(model1_neutral,model1_events,model1_event_names,ratio = F)
 
 ```
@@ -521,7 +517,7 @@ simplot_grid(model1_neutral,model1_events,model1_event_names,ratio = F)
 model1_bgs <-read_sim("results/generic/model1_bgs_pi.csv",
                          "results/generic/model1_bgs_xi.csv",
                          "results/generic/model1_bgs_tajD.csv",mu=1e-8,
-                         neutral=FALSE)
+                         neutral=FALSE,windows = 51)
 
 simplot_grid(model1_bgs,model1_events,model1_event_names,ratio = F)
 
@@ -576,7 +572,7 @@ model2_event_names <- c('Bottleneck','Recovered')
 model2_neutral <-read_sim("results/generic/model2_neutral_pi.csv",
                              "results/generic/model2_neutral_xi.csv",
                              "results/generic/model2_neutral_tajD.csv",mu=1e-8,
-                             neutral=TRUE)
+                             neutral=TRUE,windows = 51)
 simplot_grid(model2_neutral,model2_events,model2_event_names,ratio = F)
 
 ```
@@ -586,7 +582,7 @@ simplot_grid(model2_neutral,model2_events,model2_event_names,ratio = F)
 model2_bgs <-read_sim("results/generic/model2_bgs_pi.csv",
                          "results/generic/model2_bgs_xi.csv",
                          "results/generic/model2_bgs_tajD.csv",mu=1e-8,
-                         neutral=FALSE)
+                         neutral=FALSE,windows = 51)
 
 simplot_grid(model2_bgs,model2_events,model2_event_names,ratio = F)
 
