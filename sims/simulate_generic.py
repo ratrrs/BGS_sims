@@ -38,7 +38,7 @@ params = fp11.model_params.SlocusParams(**p)
 
 burn_rec = track_burnin()
 # simulate until equilibrium
-wf.evolve(rng2, mypop,params,burn_rec)
+#wf.evolve(rng2, mypop,params,burn_rec)
 
 
 
@@ -52,7 +52,8 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
 print('burnin done')
 print('Generation',mypop.generation)
 
-for model in models[0]:
+print(models)
+for model in models[0:1]:
     print(model)
     model_id = model.replace(" ", "").lower() +'/'
     print(model_id)
@@ -120,7 +121,7 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
 
 
-for model in models[0]:
+for model in models[0:1]:
     print('simulating BGS in %s'%model)
     model_id = model.replace(" ", "").lower() +'/'
     model_path = out_path + model_id
