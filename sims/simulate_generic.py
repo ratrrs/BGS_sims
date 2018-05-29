@@ -38,7 +38,7 @@ params = fp11.model_params.SlocusParams(**p)
 
 burn_rec = track_burnin()
 # simulate until equilibrium
-#wf.evolve(rng2, mypop,params,burn_rec)
+wf.evolve(rng2, mypop,params,burn_rec)
 
 
 
