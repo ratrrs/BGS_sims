@@ -24,14 +24,15 @@ def regions_dfe(species='human',neutral=False):
     if neutral == False:
         print('with BGS')
         if species == 'human' or species == 'generic':
-            sregion = [fp11.GammaS(25, 26, 1, -0.29426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
-                      fp11.GammaS(25, 26, 2, -0.00518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
+            sregion = [fp11.GammaS(5, 6, .3, -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
+                      fp11.GammaS(5, 6, .6, -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(5)] + \
                       [fp11.Region(5, 6, 0.8, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(6, 11)]  # 80 % of sites are neutral
             print('Number of neutral regions:',len(nregion))
             [print(i) for i in sregion]
+            [print(i) for i in nregion]
             # Mutation rate
             rec = mu * 20000 * 11
             mu_s = mu * 20000 *.2
@@ -49,7 +50,6 @@ def regions_dfe(species='human',neutral=False):
             mu_s = mu * 20000 *0.2
             mu_n = mu * 20000 *20 + mu * 20000 * 0.8
             rec = mu * 20000 * 21
-            rates = [mu_n,mu_s,rec]
             rates = [mu_n,mu_s,rec]
 
     elif neutral== True:
@@ -127,10 +127,12 @@ class track_burnin:
         self.counter = 1
     def __call__(self, pop):
         if self.counter % 1000 == 0:
-  #          print(pop.generation)
-            mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>5 and j.pos<6])
-            mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>5 and j.pos<6])
-            print(pop.generation,mut_neut.sum(), mut_sel.sum())
+            print(pop.generation)
+            # mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
+            #                      i > 0 and j.neutral is True and j.g == pop.generation and j.pos>5 and j.pos<6])
+            # mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
+            #                    i > 0 and j.neutral is False and j.g == pop.generation and j.pos>5 and j.pos<6])
+            # s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
+            #         i > 0 and j.neutral is False and  j.pos > 5 and j.pos < 6])
+            # print(pop.generation,mut_neut.sum(), mut_sel.sum(),s_sel.mean())
         self.counter += 1

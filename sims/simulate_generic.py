@@ -30,7 +30,7 @@ rng2 = fp11.GSLrng(np.random.randint(420000))
 
 p = {'nregions':nregion,
 'sregions': sregion,
-'recregions':[fp11.Region(0,len(nregion),1)],
+'recregions':[fp11.Region(i,i+1,1, coupled=True) for i in range(len(nregion))],
 'rates':rates,
 'demography':burnin,
 }
@@ -101,10 +101,12 @@ rng2 = fp11.GSLrng(np.random.randint(420000))
 
 p = {'nregions':nregion,
 'sregions': sregion,
-'recregions':[fp11.Region(0,len(nregion),1)],
+'recregions':[fp11.Region(i,i+1,1, coupled=True) for i in range(len(nregion))],
 'rates':rates,
 'demography':burnin,
 }
+print('Recomb region')
+[print(i) for i in p['recregions']]
 params = fp11.model_params.SlocusParams(**p)
 
 burn_rec = track_burnin()
