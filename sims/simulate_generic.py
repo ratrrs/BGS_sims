@@ -53,7 +53,7 @@ print('burnin done')
 print('Generation',mypop.generation)
 
 print(models)
-for model in models[0:1]:
+for model in models:
     print(model)
     model_id = model.replace(" ", "").lower() +'/'
     print(model_id)
@@ -105,12 +105,21 @@ p = {'nregions':nregion,
 'rates':rates,
 'demography':burnin,
 }
-print('Recomb region')
-[print(i) for i in p['recregions']]
+
 params = fp11.model_params.SlocusParams(**p)
 
 burn_rec = track_burnin()
+print('sregions')
+[print(i) for i in p['sregions']]
+print('nregions')
+[print(i) for i in p['nregions']]
+print('Recomb region')
+[print(i) for i in p['recregions']]
+print(p['rates'])
+
 # simulate until equilibrium
+
+
 wf.evolve(rng2, mypop,params,burn_rec)
 print('burnin done')
 print('Generation',mypop.generation)
@@ -123,7 +132,7 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
 
 
-for model in models[0:1]:
+for model in models:
     print('simulating BGS in %s'%model)
     model_id = model.replace(" ", "").lower() +'/'
     model_path = out_path + model_id

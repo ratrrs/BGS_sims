@@ -23,7 +23,7 @@ print('total generations', len(demog))
 if species == 'maize':
     nwindows = 21
 else:
-    nwindows = 101
+    nwindows = 21
 
 ################## simulate neutral ############################
 
