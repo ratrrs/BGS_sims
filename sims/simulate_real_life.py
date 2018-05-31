@@ -54,6 +54,9 @@ wf.evolve(rng2, mypop,params,burn_rec)
 print('burnin done')
 print('Generation',mypop.generation)
 
+burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
+with lzma.open(burnin_name, "wb", preset=9) as f:
+    pickle.dump(mypop, f, -1)
 
 # simulate with demography from 10 N generations
 p['demography'] = demog
@@ -103,6 +106,9 @@ wf.evolve(rng2, mypop,params)
 print('burnin done')
 print('Generation',mypop.generation)
 
+burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
+with lzma.open(burnin_name, "wb", preset=9) as f:
+    pickle.dump(mypop, f, -1)
 
 # simulate with demography from 10 N generations
 p['demography'] = demog
