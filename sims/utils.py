@@ -24,8 +24,8 @@ def regions_dfe(species='human',neutral=False):
     if neutral == False:
         print('with BGS')
         if species == 'human' or species == 'generic':
-            sregion = [fp11.GammaS(10, 11, 2., -0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
-                      fp11.GammaS(10, 11, 1., -0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
+            sregion = [fp11.GammaS(10, 11, 1.,-0.029426,0.184,h=1.0, coupled=True), # coding DFE 1/3 of sel mutations in this region
+                      fp11.GammaS(10, 11, 2.,-0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
                       [fp11.Region(10, 11, 0.8, coupled=True)] + \
