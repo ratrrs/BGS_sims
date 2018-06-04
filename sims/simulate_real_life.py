@@ -1,6 +1,7 @@
 from utils import *
 import pandas as pd
 import sys
+import lzma
 
 demog_file = sys.argv[1]#'../demographies/tennessen.csv'
 out_path = sys.argv[2]#'results/'
