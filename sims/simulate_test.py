@@ -5,8 +5,8 @@ import os
 import lzma
 
 #demog_file = sys.argv[1]#'../demographies/generic_models.csv'
-out_path = sys.argv[2]#'../results/generic/'
-replicate = str(sys.argv[3]) #replicate name
+out_path = sys.argv[1]#'../results/generic/'
+replicate = str(sys.argv[2]) #replicate name
 
 
 #demographies = pd.read_csv(demog_file)
