@@ -15,9 +15,9 @@ import pickle
 def regions_dfe(species='human',neutral=False):
     if species == 'human':
         mu = 1.66e-8
-    elif species == 'maize':
+    elif species == 'maize' or 'test':
         mu = 3.0e-7
-    elif species == 'generic' or 'test':
+    elif species == 'generic':
         mu = 1e-8
 
 
@@ -28,51 +28,50 @@ def regions_dfe(species='human',neutral=False):
                       fp11.GammaS(10, 11, 2.,-0.000518,0.0415,h=1.0, coupled=True) # conserved non-coding DFE 2/3 of sel mutations in this region
                       ]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
-                      [fp11.Region(10, 11, 0.8, coupled=True)] + \
+                      [fp11.Region(10, 11, 0.25, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
             print('Number of neutral regions:',len(nregion))
 
             # Mutation rate
             rec = mu * 20000 * 21
-            mu_s = mu * 20000 *.2
-            mu_n = mu * 20000 * 20 + mu * 20000 * 0.8
+            mu_s = mu * 20000 *.75
+            mu_n = mu * 20000 * 20 + mu * 20000 * 0.25
             rates = [mu_n, mu_s, rec]
 
         elif species =='maize':
             sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(10)] + \
-                      [fp11.Region(10, 11, .8, coupled=True)] + \
+                      [fp11.Region(10, 11, .25, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
             print('Number of neutral regions:',len(nregion))
             # Mutation rate
-            mu_s = mu * 20000 *0.2
-            mu_n = mu * 20000 *20 + mu * 20000 * 0.8
+            mu_s = mu * 20000 *0.75
+            mu_n = mu * 20000 *20 + mu * 20000 * 0.25
             rec = mu * 20000 * 21
             rates = [mu_n,mu_s,rec]
 
         elif species== 'test':
-            sregion = [fp11.ConstantS(10, 11, 1., -0.015, h=1.0, coupled=True)
-                       ]
+            sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
-                      [fp11.Region(10, 11, 0.8, coupled=True)] + \
+                      [fp11.Region(10, 11, 0.2, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
             print('Number of neutral regions:', len(nregion))
             # Mutation rate
-            rec = mu * 20000 * 20
-            mu_s = mu * 20000 *.2
-            mu_n = mu * 20000 * 20 + mu * 20000 * 0.8
+            rec = mu * 20000 * 21
+            mu_s = mu * 20000 *.8
+            mu_n = mu * 20000 * 20 + mu * 20000 * 0.2
             rates = [mu_n, mu_s, rec]
 
     elif neutral== True:
         print('neutral')
         sregion = []
-        if species == 'human' or species == 'generic' or species == 'test':
+        if species == 'human' or species == 'generic':
             nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
             # Mutation rates
             mu_n = rec = mu * 20000 *21
             rates = [mu_n,0,rec]
 
-        elif species == 'maize':
+        elif species == 'maize' or species == 'test':
             nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
             # Mutation rates
             mu_n = rec = mu * 20000 *21
@@ -107,7 +106,7 @@ def str2byte(tup,fmtstring):
 class neutral_div:
     def __init__(self,set_gen,final,Nstart,nwindows=21):
         self.nwindows = nwindows
-        self.val_per_window = 5
+        self.val_per_window = 1
         self.pi = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.tajimasD = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
@@ -142,10 +141,10 @@ class track_burnin:
         if self.counter % 1000 == 0:
             print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>10 and j.pos<11])
+                                 i > 0 and j.neutral is True and i >0 and j.pos>10 and j.pos<11])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>10 and j.pos<11])
+                               i > 0 and j.neutral is False and i >0 and j.pos>10 and j.pos<11])
             s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
                     i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 10 and j.pos < 11])
-            print(pop.generation,mut_neut.sum(), mut_sel.sum(),s_sel.mean())
+            print(pop.generation,mut_sel.sum()/(mut_neut.sum()+mut_sel.sum()),s_sel.mean())
         self.counter += 1

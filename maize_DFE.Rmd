@@ -1,0 +1,81 @@
+---
+title: "DFE BGS"
+author: "Markus"
+date: "3/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(cowplot)
+orig_theme <- theme_set(theme_cowplot(font_size=22))
+
+#stuff
+breaks<-c(1,10,100)/122783
+#obs_density=c(0.1,0.05,0.075,0.775) #clasical genes
+obs_density=c(0.2,0.08,0.12,0.6)
+
+#initial log uniform
+#grates=10^((0:1000)/1000)
+#gshape=10^((-1500:-500)/1000) 
+
+#fine scale
+grates=1500:2200/1000
+gshape=1000:2000/10000
+
+#matrices
+ss=matrix(nrow=length(grates),ncol=length(gshape))
+params=ss
+
+#grid
+for(i in 1:length(grates)){
+  i_rate=grates[i]
+  for(j in 1:length(gshape)){
+  j_shape=gshape[j]
+  
+  p=as.numeric()
+  p[1]=pgamma(shape=j_shape,rate=i_rate,breaks[1])
+  p[2]=pgamma(shape=j_shape,rate=i_rate,breaks[2])-p[1]
+  p[3]=pgamma(shape=j_shape,rate=i_rate,breaks[3])-p[1]-p[2]
+  p[4]=pgamma(shape=j_shape,rate=i_rate,10000)-p[1]-p[2]-p[3]
+  ss[i,j]=sum((p - obs_density)^2)
+  }
+}
+
+#surface
+best_rates=grates[which(ss<quantile(ss,0.0005),arr.ind = TRUE)[,1]]
+best_shapes=gshape[which(ss<quantile(ss,0.0005),arr.ind = TRUE)[,2]]
+alpha=1-(ss[which(ss<quantile(ss,0.0005))]-ss[which(ss==min(ss))])*1E7
+alpha[which(alpha<0)]=0
+plot(best_shapes~best_rates,pch=21,cex=1,bg=rgb(1,0,0,alpha),col=rgb(0,0,0,0.1))
+
+#params
+bestrate=grates[which(ss==min(ss),arr.ind = TRUE)[1,1]]
+bestrate
+bestshape=gshape[which(ss==min(ss),arr.ind = TRUE)[1,2]]
+bestshape
+
+#distribution
+bob=rgamma(shape=bestshape,rate=bestrate,10000)
+length(which(bob<breaks[1]))/length(bob)
+length(which(bob<breaks[2] & bob>breaks[1]))/length(bob)
+length(which(bob<breaks[3] & bob>breaks[2]))/length(bob)
+length(which(bob>breaks[3]))/length(bob)
+
+ggplot(data.frame(x = seq(0, 1,.001)), aes(x = x)) +
+  stat_function(fun=dgamma, args=list(shape=bestshape, rate=bestrate),size=2)+
+  scale_x_log10(breaks=c(0,0.001,0.01,0.1,1)) +
+  labs(x= 'Fitness effect') +
+  theme(axis.text.y = element_blank(),axis.ticks.y = element_blank(),axis.title.y = element_blank())
+
+  #ggplot() +geom_line(aes(x=seq(0, 1,.001),y=dgamma(seq(0, 1,.001),shape=bestshape, rate=bestrate)),size=2) +  scale_x_log10(breaks=c(0,0.001,0.01,0.1,1)) 
+#mean
+bestshape/bestrate
+#values used in BGS sims
+paste("mean:",-0.083,"shape:",0.1514)
+```

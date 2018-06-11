@@ -14,8 +14,7 @@ replicate = str(sys.argv[2]) #replicate name
 #print(models)
 Nstart = 10000
 
-recregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(10)] +\
-            [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]
+recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
 
 ################## simulate neutral ############################
 
@@ -55,7 +54,7 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
 print('burnin done')
 print('Generation',mypop.generation)
 
-model_path = out_path + 'constant_s/'
+model_path = out_path + 'maize/'
 if not os.path.exists(model_path):
     os.makedirs(model_path)
 demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
@@ -128,7 +127,7 @@ burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
 with lzma.open(burnin_name, "wb", preset=9) as f:
     pickle.dump(mypop, f, -1)
 
-model_path = out_path + 'constant_s/'
+model_path = out_path + 'maize/'
 if not os.path.exists(model_path):
     os.makedirs(model_path)
 demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
