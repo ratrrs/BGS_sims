@@ -15,10 +15,10 @@ import pickle
 def regions_dfe(species='human',neutral=False):
     if species == 'human':
         mu = 1.66e-8
-    elif species == 'maize' or 'test':
+    elif species == 'maize':
         mu = 3.0e-7
-    elif species == 'generic':
-        mu = 1e-8
+    elif species == 'generic' or 'test':
+        mu = 3e-8
 
 
     if neutral == False:

@@ -78,4 +78,5 @@ ggplot(data.frame(x = seq(0, 1,.001)), aes(x = x)) +
 bestshape/bestrate
 #values used in BGS sims
 paste("mean:",-0.083,"shape:",0.1514)
+paste('shape:',bestshape,'rate:', bestrate)
 ```
