@@ -18,7 +18,7 @@ def regions_dfe(species='human',neutral=False):
     elif species == 'maize':
         mu = 3.0e-7
     elif species == 'generic' or 'test':
-        mu = 3e-8
+        mu = 3e-7
 
 
     if neutral == False:
@@ -34,24 +34,24 @@ def regions_dfe(species='human',neutral=False):
 
             # Mutation rate
             rec = mu * 20000 * 21
-            mu_s = mu * 20000 *.75
-            mu_n = mu * 20000 * 20 + mu * 20000 * 0.25
+            mu_s = mu * 20000 *.8
+            mu_n = mu * 20000 * 20 + mu * 20000 * 0.8
             rates = [mu_n, mu_s, rec]
 
         elif species =='maize':
-            sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
+            sregion = [fp11.GammaS(10, 11, 1, -0.83, 0.1514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(10)] + \
-                      [fp11.Region(10, 11, .25, coupled=True)] + \
+                      [fp11.Region(10, 11, .2, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1, coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
             print('Number of neutral regions:',len(nregion))
             # Mutation rate
-            mu_s = mu * 20000 *0.75
-            mu_n = mu * 20000 *20 + mu * 20000 * 0.25
+            mu_s = mu * 20000 *0.8
+            mu_n = mu * 20000 *20 + mu * 20000 * 0.2
             rec = mu * 20000 * 21
             rates = [mu_n,mu_s,rec]
 
         elif species== 'test':
-            sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.1514, h=1.0, coupled=True)]
+            sregion = [fp11.GammaS(10, 11, 1, -0.83, 0.1514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
                       [fp11.Region(10, 11, 0.2, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
