@@ -14,6 +14,7 @@ models = np.array(demographies.columns[:-1])
 #print(models)
 Nstart = 20000
 
+recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(21)] # 21 windows
 
 ################## simulate neutral ############################
 
@@ -30,7 +31,7 @@ rng2 = fp11.GSLrng(np.random.randint(420000))
 
 p = {'nregions':nregion,
 'sregions': sregion,
-'recregions':[fp11.Region(i,i+1,1, coupled=True) for i in range(len(nregion))],
+'recregions':recregion,
 'rates':rates,
 'demography':burnin,
 }
@@ -101,7 +102,7 @@ rng2 = fp11.GSLrng(np.random.randint(420000))
 
 p = {'nregions':nregion,
 'sregions': sregion,
-'recregions':[fp11.Region(i,i+1,1, coupled=True) for i in range(len(nregion))],
+'recregions':recregion,
 'rates':rates,
 'demography':burnin,
 }

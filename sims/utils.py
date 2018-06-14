@@ -18,7 +18,7 @@ def regions_dfe(species='human',neutral=False):
     elif species == 'maize':
         mu = 3.0e-7
     elif species == 'generic' or 'test':
-        mu = 3e-7
+        mu = 3e-8
 
 
     if neutral == False:
@@ -50,8 +50,8 @@ def regions_dfe(species='human',neutral=False):
             rec = mu * 20000 * 21
             rates = [mu_n,mu_s,rec]
 
-        elif species== 'test':
-            sregion = [fp11.GammaS(10, 11, 1, -0.83, 0.1514, h=1.0, coupled=True)]
+        elif species== 'test' or species == 'generic':
+            sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.01514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
                       [fp11.Region(10, 11, 0.2, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 80 % of sites are neutral
@@ -65,13 +65,13 @@ def regions_dfe(species='human',neutral=False):
     elif neutral== True:
         print('neutral')
         sregion = []
-        if species == 'human' or species == 'generic':
+        if species == 'human':
             nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
             # Mutation rates
             mu_n = rec = mu * 20000 *21
             rates = [mu_n,0,rec]
 
-        elif species == 'maize' or species == 'test':
+        elif species == 'maize' or species == 'test' or species == 'generic':
             nregion = [fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
             # Mutation rates
             mu_n = rec = mu * 20000 *21
@@ -116,7 +116,7 @@ class neutral_div:
         self.Nstart = Nstart
     def __call__(self, pop):
         rng3 = fp11.GSLrng(np.random.randint(420000))
-        if self.counter % 100 == 0  or (pop.generation==self.final):
+        if self.counter % 50 == 0  or (pop.generation==self.final):
  #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
             ind_sampled = 200
@@ -138,13 +138,13 @@ class track_burnin:
     def __init__(self):
         self.counter = 1
     def __call__(self, pop):
-        if self.counter % 1000 == 0:
-            print(pop.generation)
+        if self.counter % 10000 == 0:
+  #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and i >0 and j.pos>10 and j.pos<11])
+                                 i > 0 and j.neutral is True and j.pos>10 and j.pos<11])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and i >0 and j.pos>10 and j.pos<11])
+                               i > 0 and j.neutral is False and j.pos>10 and j.pos<11])
             s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
                     i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 10 and j.pos < 11])
-            print(pop.generation,mut_sel.sum()/(mut_neut.sum()+mut_sel.sum()),s_sel.mean())
+            print(pop.generation,mut_sel.sum(),mut_neut.sum(),s_sel.mean())
         self.counter += 1
