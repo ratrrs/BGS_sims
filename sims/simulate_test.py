@@ -29,7 +29,7 @@ mypop =  fp11.SlocusPop(Nstart)
 rng2 = fp11.GSLrng(np.random.randint(420000))
 
 
-[print(i) for i in recregion]
+
 p = {'nregions':nregion,
 'sregions': sregion,
 'recregions':recregion,

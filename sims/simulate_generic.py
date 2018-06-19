@@ -28,6 +28,14 @@ mypop =  fp11.SlocusPop(Nstart)
 #prepare random number gernerator
 rng2 = fp11.GSLrng(np.random.randint(420000))
 
+print('rec')
+[print(i) for i in recregion]
+print('sregion')
+[print(i) for i in sregion]
+print('nregion')
+[print(i) for i in nregion]
+print(rates)
+
 
 p = {'nregions':nregion,
 'sregions': sregion,
