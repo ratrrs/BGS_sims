@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import os
 import lzma
+import fwdpy11 as fp11
 
 #demog_file = sys.argv[1]#'../demographies/generic_models.csv'
 out_path = sys.argv[1]#'../results/generic/'
@@ -13,12 +14,18 @@ replicate = str(sys.argv[2]) #replicate name
 #models = np.array(demographies.columns[:-1])
 #print(models)
 Nstart = 10000
+mu = 3.0e-7
 
 recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
 
+
 ################## simulate neutral ############################
 
-sregion,nregion,rates = regions_dfe(species='test',neutral=True)
+sregion= []
+nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(21)]
+# Mutation rates
+mu_n = rec = mu * 20000 * 21
+rates = [mu_n, 0, rec]
 
 # constant size for 10 N generations
 burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
@@ -26,9 +33,16 @@ burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
 mypop =  fp11.SlocusPop(Nstart)
 
 #prepare random number gernerator
-rng2 = fp11.GSLrng(np.random.randint(420000))
+rng2 = fp11.GSLrng(np.random.randint(42*float(replicate)))
 
-
+mypop.N
+print('rec')
+[print(i) for i in recregion]
+print('sregion')
+[print(i) for i in sregion]
+print('nregion')
+[print(i) for i in nregion]
+print(rates)
 
 p = {'nregions':nregion,
 'sregions': sregion,
@@ -84,7 +98,18 @@ write_output(rec1, model_path, 'neutral', replicate)
 
 ################## simulate BGS ############################
 
-sregion,nregion,rates = regions_dfe(species='test',neutral=False)
+sregion = [fp11.GammaS(10, 11, 1, -0.83, 0.01514, h=1.0, coupled=True)]
+nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
+          [fp11.Region(10, 11, 0.2, coupled=True)] + \
+          [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 20 % of sites are neutral
+# Mutation rate
+rec = mu * 20000 * 21
+mu_s = mu * 20000 * .8
+mu_n = mu * 20000 * 20 + mu * 20000 * 0.2
+rates = [mu_n, mu_s, rec]
+
+
+
 
 # constant size for 10 N generations
 burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
@@ -92,7 +117,7 @@ burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
 mypop =  fp11.SlocusPop(Nstart)
 
 #prepare random number gernerator
-rng2 = fp11.GSLrng(np.random.randint(420000))
+rng2 = fp11.GSLrng(np.random.randint(42*float(replicate)))
 
 
 p = {'nregions':nregion,

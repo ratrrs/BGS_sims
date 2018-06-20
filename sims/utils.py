@@ -18,7 +18,7 @@ def regions_dfe(species='human',neutral=False):
     elif species == 'maize':
         mu = 3.0e-7
     elif species == 'generic' or 'test':
-        mu = 3e-8
+        mu = 3.0e-7
 
 
     if neutral == False:
@@ -141,9 +141,9 @@ class track_burnin:
         if self.counter % 10000 == 0:
   #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.pos>10 and j.pos<11])
+                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>10 and j.pos<11])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and j.pos>10 and j.pos<11])
+                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>10 and j.pos<11])
             s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
                     i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 10 and j.pos < 11])
             print(pop.generation,mut_sel.sum(),mut_neut.sum(),s_sel.mean())
