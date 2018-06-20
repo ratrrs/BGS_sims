@@ -51,7 +51,7 @@ def regions_dfe(species='human',neutral=False):
             rates = [mu_n,mu_s,rec]
 
         elif species== 'test' or species == 'generic':
-            sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.01514, h=1.0, coupled=True)]
+            sregion = [fp11.GammaS(10, 11, 1, -0.83, 0.01514, h=1.0, coupled=True)]
             nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
                       [fp11.Region(10, 11, 0.2, coupled=True)] + \
                       [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 20 % of sites are neutral
