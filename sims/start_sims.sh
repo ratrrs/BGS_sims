@@ -22,8 +22,8 @@ echo replicate $SLURM_ARRAY_TASK_ID
 #srun python sims/simulate_real_life.py demographies/maize.csv results/maize/ maize $SLURM_ARRAY_TASK_ID
 
 
-mkdir -p results/generic/burnins
-srun python sims/simulate_generic.py demographies/generic_models.csv results/test/ $SLURM_ARRAY_TASK_ID
+#mkdir -p results/generic/burnins
+#srun python sims/simulate_generic.py demographies/generic_models.csv results/test/ $SLURM_ARRAY_TASK_ID
 
-#mkdir -p results/test/burnins
-#srun python sims/simulate_test.py results/test/ $SLURM_ARRAY_TASK_ID
+mkdir -p results/maize_large/burnins
+srun python sims/simulate_test.py results/maize_large/ $SLURM_ARRAY_TASK_ID

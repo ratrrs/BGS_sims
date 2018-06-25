@@ -106,7 +106,7 @@ def str2byte(tup,fmtstring):
 class neutral_div:
     def __init__(self,set_gen,final,Nstart,nwindows=21):
         self.nwindows = nwindows
-        self.val_per_window = 1
+        self.val_per_window = 10
         self.pi = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.tajimasD = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
@@ -119,7 +119,7 @@ class neutral_div:
         if self.counter % 50 == 0  or (pop.generation==self.final):
  #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
-            ind_sampled = 200
+            ind_sampled = 400
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
             w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=0., ending_pos=float(self.nwindows))
