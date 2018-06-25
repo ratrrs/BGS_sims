@@ -98,14 +98,14 @@ recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(21)]
 
 ################## simulate BGS ############################
 
-sregion = [fp11.GammaS(10, 11, 1, -0.083, 0.01514, h=1.0, coupled=True)]
-nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(10)] + \
-          [fp11.Region(10, 11, 0.2, coupled=True)] + \
-          [fp11.Region(i, i + 1, 1., coupled=True) for i in range(11, 21)]  # 20 % of sites are neutral
+sregion = [fp11.GammaS(20, 21, 1, -0.083, 0.01514, h=1.0, coupled=True)]
+nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(20)] + \
+          [fp11.Region(20, 21, 0.2, coupled=True)] + \
+          [fp11.Region(i, i + 1, 1., coupled=True) for i in range(21, 41)]  # 20 % of sites are neutral
 # Mutation rate
-rec = mu * 20000 * 21
+rec = mu * 20000 * 41
 mu_s = mu * 20000 * .8
-mu_n = mu * 20000 * 20 + mu * 20000 * 0.2
+mu_n = mu * 20000 * 40 + mu * 20000 * 0.2
 rates = [mu_n, mu_s, rec]
 
 
@@ -169,7 +169,7 @@ params = fp11.model_params.SlocusParams(**p)
 
 # add recorder that records pi, singletons and tajimas D
 set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
-rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
+rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart,nwindows=41)
 
 wf.evolve(rng2, pop2, params, rec1)
 print('Generation', pop2.generation)

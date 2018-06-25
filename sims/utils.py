@@ -18,7 +18,7 @@ def regions_dfe(species='human',neutral=False):
     elif species == 'maize':
         mu = 3.0e-7
     elif species == 'generic' or 'test':
-        mu = 3.0e-7
+        mu = 3.0e-8
 
 
     if neutral == False:

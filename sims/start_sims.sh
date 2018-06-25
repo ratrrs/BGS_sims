@@ -8,7 +8,7 @@
 #SBATCH --array=0-999
 #SBATCH --nodes=1-1
 #SBATCH --ntasks 1
-#SBATCH --exclude bigmem1 bigmem10
+#SBATCH --exclude bigmem1,bigmem10
 
 echo replicate $SLURM_ARRAY_TASK_ID
 
