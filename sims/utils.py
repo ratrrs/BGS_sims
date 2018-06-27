@@ -106,7 +106,7 @@ def str2byte(tup,fmtstring):
 class neutral_div:
     def __init__(self,set_gen,final,Nstart,nwindows=21):
         self.nwindows = nwindows
-        self.val_per_window = 10
+        self.val_per_window = 20
         self.pi = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.tajimasD = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
