@@ -64,7 +64,7 @@ burn_rec = track_burnin()
 
 #ppop = pickle.dumps(mypop,-1)
 # pickle equilibirum population
-#burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
+burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
 #with lzma.open(burnin_name, "wb", preset=9) as f:
 #    pickle.dump(mypop, f, -1)
 
@@ -151,7 +151,7 @@ print('Generation',mypop.generation)
 
 #ppop = pickle.dumps(mypop,-1)
 # pickle equilibirum population
-#burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
+burnin_name = out_path + "burnins/burnin_bgs_%s.lzma9" % replicate
 #with lzma.open(burnin_name, "wb", preset=9) as f:
 #    pickle.dump(mypop, f, -1)
 
