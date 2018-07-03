@@ -77,6 +77,8 @@ print('burnin done')
 print('Generation',mypop.generation)
 
 for model in models:
+
+
     print('Model:',model)
     model_id = model.replace(" ", "").lower() + '/'
     print(model_id)
@@ -102,7 +104,7 @@ for model in models:
     set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
     rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
 
-    #wf.evolve(rng2, pop2, params, rec1)
+    wf.evolve(rng2, pop2, params, rec1)
     print('Generation', pop2.generation)
 
     # write output
@@ -186,27 +188,27 @@ for model in models:
     demog = demog[~np.isnan(demog)]
 
 
-#model_path = out_path + 'maize/'
-#if not os.path.exists(model_path):
-#    os.makedirs(model_path)
-#demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
+    #model_path = out_path + 'maize/'
+    #if not os.path.exists(model_path):
+    #    os.makedirs(model_path)
+    #demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
 
-with lzma.open(burnin_name, 'rb') as f:
-    pop2 = pickle.load(f)
-print(pop2.generation)
-#Unpickle to create a new pop:
-#    pop2 = pickle.loads(ppop)
-#    print(mypop==pop2)
+    with lzma.open(burnin_name, 'rb') as f:
+        pop2 = pickle.load(f)
+    print(pop2.generation)
+    #Unpickle to create a new pop:
+    #    pop2 = pickle.loads(ppop)
+    #    print(mypop==pop2)
 
-p['demography'] = demog
-params = fp11.model_params.SlocusParams(**p)
+    p['demography'] = demog
+    params = fp11.model_params.SlocusParams(**p)
 
-# add recorder that records pi, singletons and tajimas D
-set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
-rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
+    # add recorder that records pi, singletons and tajimas D
+    set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
+    rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
 
-wf.evolve(rng2, pop2, params, rec1)
-print('Generation', pop2.generation)
+    wf.evolve(rng2, pop2, params, rec1)
+    print('Generation', pop2.generation)
 
-# write output
-write_output(rec1, model_path, 'bgs', replicate)
+    # write output
+    write_output(rec1, model_path, 'bgs', replicate)

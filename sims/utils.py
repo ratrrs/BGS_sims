@@ -104,12 +104,13 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=20):
+    def __init__(self,set_gen,final,Nstart,nwindows=45,beginning = 25):
         self.nwindows = nwindows
-        self.val_per_window = 2
-        self.pi = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
-        self.singleton = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
-        self.tajimasD = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
+        self.val_per_window = 4
+        self.beginning = beginning
+        self.pi = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
+        self.singleton = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
+        self.tajimasD = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
         self.counter = 1
         self.final = final
         self.set_gen = set_gen
@@ -122,7 +123,7 @@ class neutral_div:
             ind_sampled = 400
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
-            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=15., ending_pos=35.)
+            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=self.beginning, ending_pos=self.nwindows)
             window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
 
             window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
