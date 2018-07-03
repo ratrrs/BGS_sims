@@ -104,9 +104,9 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=21):
+    def __init__(self,set_gen,final,Nstart,nwindows=20):
         self.nwindows = nwindows
-        self.val_per_window = 20
+        self.val_per_window = 2
         self.pi = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.singleton = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
         self.tajimasD = [['gen']+[i for i in range(self.nwindows*self.val_per_window)]]
@@ -122,7 +122,7 @@ class neutral_div:
             ind_sampled = 400
             samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
             neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
-            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=0., ending_pos=float(self.nwindows))
+            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=15., ending_pos=35.)
             window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
 
             window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
@@ -141,10 +141,10 @@ class track_burnin:
         if self.counter % 10000 == 0:
   #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>10 and j.pos<11])
+                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>0 and j.pos<15])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>10 and j.pos<11])
+                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>0 and j.pos<15])
             s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
-                    i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 10 and j.pos < 11])
+                    i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 0 and j.pos < 15])
             print(pop.generation,mut_sel.sum(),mut_neut.sum(),s_sel.mean())
         self.counter += 1

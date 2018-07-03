@@ -25,5 +25,5 @@ echo replicate $SLURM_ARRAY_TASK_ID
 #mkdir -p results/generic/burnins
 #srun python sims/simulate_generic.py demographies/generic_models.csv results/test/ $SLURM_ARRAY_TASK_ID
 
-mkdir -p results/maize_test/burnins
-srun python sims/simulate_test.py demographies/maize.csv results/maize_test/ $SLURM_ARRAY_TASK_ID
+mkdir -p results/generic_test/burnins
+srun python sims/simulate_test.py demographies/generic_models.csv results/generic_test/ $SLURM_ARRAY_TASK_ID
