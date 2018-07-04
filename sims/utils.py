@@ -104,7 +104,7 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=45,beginning = 25):
+    def __init__(self,set_gen,final,Nstart,nwindows=55,beginning = 50):
         self.nwindows = nwindows
         self.val_per_window = 4
         self.beginning = beginning
@@ -142,10 +142,10 @@ class track_burnin:
         if self.counter % 10000 == 0:
   #          print(pop.generation)
             mut_neut = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>0 and j.pos<15])
+                                 i > 0 and j.neutral is True and j.g == pop.generation and j.pos>0 and j.pos<50])
             mut_sel = np.array([(i) for i, j in zip(pop.mcounts, pop.mutations) if
-                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>0 and j.pos<15])
+                               i > 0 and j.neutral is False and j.g == pop.generation and j.pos>0 and j.pos<50])
             s_sel = np.array([(j.s) for i, j in zip(pop.mcounts, pop.mutations) if
-                    i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 0 and j.pos < 15])
+                    i > 0 and j.neutral is False and j.g == pop.generation and  j.pos > 0 and j.pos < 50])
             print(pop.generation,mut_sel.sum(),mut_neut.sum(),s_sel.mean())
         self.counter += 1

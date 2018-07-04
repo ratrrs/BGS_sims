@@ -28,11 +28,12 @@ Nwindows = 20
 
 
 ################## simulate neutral ############################
-recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(25,45)]
+recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(50,55)]
 sregion= []
-nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(25,45)]
+nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(50,55)]
 # Mutation rates
-mu_n = rec = mu * 40000 * 20
+mu_n = mu * 40000 * 5
+rec = 8.2e-10 * 40000 * 5
 rates = [mu_n, 0, rec]
 
 # constant size for 10 N generations
@@ -43,7 +44,6 @@ mypop =  fp11.SlocusPop(Nstart)
 #prepare random number gernerator
 rng2 = fp11.GSLrng(np.random.randint(42*(1+float(replicate))))
 
-mypop.N
 print('rec')
 [print(i) for i in recregion]
 print('sregion')
@@ -114,21 +114,21 @@ for model in models:
 
 ################## simulate BGS ############################
 
-recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(45)]
+recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(55)]
 
 
-sregion =   [fp11.GammaS(i, i + 1, 1., -0.029426, 0.184, h=1.0, coupled=True) for i in range(25)] +\
-            [fp11.GammaS(i, i + 1, 2., -0.000518, 0.0415, h=1.0, coupled=True) for i in range(25)] # conserved non-coding DFE 2/3 of sel mutations in this region
+sregion =   [fp11.GammaS(i, i + 1, 1., -0.029426, 0.184, h=1.0, coupled=True) for i in range(50)] +\
+            [fp11.GammaS(i, i + 1, 2., -0.000518, 0.0415, h=1.0, coupled=True) for i in range(50)] # conserved non-coding DFE 2/3 of sel mutations in this region
 
 #sregion = [fp11.GammaS(-1, 0, 1, -0.83, 0.01514, h=1.0, coupled=True)]
 
 
-nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(25,45)]
+nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(50,55)]
 
 # Mutation rate
-rec = mu * 40000 * 45
-mu_s = mu * 40000 * 25 *0.2
-mu_n = mu * 40000 * 20
+rec = 8.2e-10 * 40000 * 55
+mu_s = mu * 40000 * 50 * 0.2
+mu_n = mu * 40000 * 5
 rates = [mu_n, mu_s, rec]
 
 
