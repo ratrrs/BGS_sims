@@ -31,7 +31,7 @@ orig_theme <- theme_set(theme_cowplot(font_size=20))
 ## Data preparation functions
 
 ```{r munge function}
-read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE,windows=101){
+read_sim<-function(pidata,xidata,tajdata,roh=8.2e-10,neutral=FALSE,windows=20){
   #read data
   pi<-as.tibble(read.csv(pidata,header=T))
   print(nrow(pi))
@@ -46,8 +46,7 @@ read_sim<-function(pidata,xidata,tajdata,mu=1.66e-8,neutral=FALSE,windows=101){
     gather(window,value,-gen,-stat,-sim) %>% 
     group_by(gen,stat,window) %>%
     summarize(mean_val=mean(value,na.rm = T)) %>%
-    mutate(centimorgen=(as.numeric(window)-((windows-1)/2+1))*20000*mu*100 ,mean_val=mean_val)%>%
-    mutate(mean_val=ifelse(neutral==FALSE & centimorgen==0,mean_val*1.25,mean_val))
+    mutate(centimorgen=as.numeric(window)*10000*roh*100 ,mean_val=mean_val)
   return(data)
 }
 #neutral=TRUE
@@ -114,9 +113,8 @@ legend, rel_widths = c(85,15))
 Function to plot ratios over time and by genetic distance
 ```{r}
 
-plot_ratios <- function(data,events,windows=51){
-  center <- windows/2+.5
-  window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
+plot_ratios <- function(data,events,windows=20){
+  window_list <- c(1,5,10,20)
 comb <- data %>%
   filter(window%in%window_list,stat%in%c('pi','xi')) %>%
   mutate(centimorgen=abs(centimorgen)) %>%
@@ -128,7 +126,7 @@ start_val <- comb %>%
   summarise(mean_val=mean(mean_val))
 
 ggplot(comb,aes(gen,mean_val,color=stat)) +
-  geom_smooth(method = 'loess',span=0.2)+
+  geom_smooth(method = 'loess',span=0.1)+
 #  geom_line(size=1.5) +
   geom_hline(data=data.frame(yint=start_val$mean_val,centimorgen=start_val$centimorgen),aes(yintercept =yint))+
   labs(x=expression(paste('Generation (x ',N[anc],')')),y=expression(x/x[neut]),color='Statistics'
@@ -143,7 +141,8 @@ ggplot(comb,aes(gen,mean_val,color=stat)) +
   theme(strip.background = element_rect(fill=alpha('lightblue',.2)),
         strip.text.y = element_text(angle = 0,hjust = 0),
         plot.caption=element_text(size=12,hjust = 0)) +
-  scale_x_continuous(breaks=c(0,0.3,0.6,0.9,1.2))
+#  scale_x_continuous(breaks=c(0,0.3,0.6,0.9,1.2)) +
+NULL
 
 }
 
@@ -154,7 +153,7 @@ ggplot(comb,aes(gen,mean_val,color=stat)) +
 
 Function to plot absolute values over time and by genetic distance
 ```{r}
-plot_over_time <- function(data,events,stats,windows=51){
+plot_over_time <- function(data,events,stats,windows=20){
   center <- windows/2+.5
   window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
   comb <- data %>%
@@ -456,21 +455,22 @@ ggsave('figures/smooth_distance_summary_maize.pdf',width = 16,height=7)
 ```{r}
 demog <- read.csv('demographies/generic_models.csv')
 demog <- demog %>%
-  gather(model,size,Model.1,Model.2,Model.3,Model.4,Model.5,Model.6,Model.7,Model.8,Model.9) %>%
+  gather(model,size,Model.1,Model.2,Model.3,Model.4,Model.5,Model.6,Model.7,Model.8,Model.9,Model.10,Model.11,Model.12) %>%
   mutate(bneck_length=case_when(model%in%c('Model.2','Model.3','Model.6','Model.7')~'1_Short',
-                                model%in%c('Model.4','Model.5','Model.8','Model.9')~'2_Long',
+                                model%in%c('Model.4','Model.5','Model.8','Model.9','Model.10','Model.11','Model.12')~'2_Long',
                                 model=='Model.1'~'Constant'),
          bneck_strength=case_when(model%in%c('Model.2','Model.4','Model.6','Model.8')~'1_Weak',
                                   model%in%c('Model.3','Model.5','Model.7','Model.9')~'2_Strong',
+                                  model%in%c('Model.10','Model.11','Model.12')~'3_constant',
                                   model=='Model.1'~'Constant'),
          bneck_age = case_when(model%in%c('Model.6','Model.7','Model.8','Model.9')~'2_Late',
-                               model%in%c('Model.2','Model.3','Model.4','Model.5')~'1_Early',
+                               model%in%c('Model.2','Model.3','Model.4','Model.5','Model.10','Model.11','Model.12')~'1_Early',
                                model=='Model.1'~'Constant'),
          size=size)
 demog <- filter(demog,model!='Model.1')
 
 length_labels <- c('1_Short' = 'Short','2_Long'='Long')
-strength_labels <- c('1_Weak'= 'Weak','2_Strong'='Strong')
+strength_labels <- c('1_Weak'= 'Weak','2_Strong'='Strong','3_constant'='Constant')
 age_labels <- c('1_Early'='Old','2_Late'='Recent')
 
 
@@ -506,8 +506,8 @@ model1_event_names <- c(0,0.9)
 
 model1_neutral <-read_sim("results/generic/model1_neutral_pi.csv",
                              "results/generic/model1_neutral_xi.csv",
-                             "results/generic/model1_neutral_tajD.csv",mu=1e-8,
-                             neutral=TRUE,windows = 51)
+                             "results/generic/model1_neutral_tajD.csv",
+                             neutral=TRUE)
 simplot_grid(model1_neutral,model1_events,model1_event_names,ratio = F)
 
 ```
@@ -516,8 +516,8 @@ simplot_grid(model1_neutral,model1_events,model1_event_names,ratio = F)
 ```{r}
 model1_bgs <-read_sim("results/generic/model1_bgs_pi.csv",
                          "results/generic/model1_bgs_xi.csv",
-                         "results/generic/model1_bgs_tajD.csv",mu=1e-8,
-                         neutral=FALSE,windows = 51)
+                         "results/generic/model1_bgs_tajD.csv",
+                         neutral=FALSE)
 
 simplot_grid(model1_bgs,model1_events,model1_event_names,ratio = F)
 
@@ -571,8 +571,8 @@ model2_event_names <- c('Bottleneck','Recovered')
 
 model2_neutral <-read_sim("results/generic/model2_neutral_pi.csv",
                              "results/generic/model2_neutral_xi.csv",
-                             "results/generic/model2_neutral_tajD.csv",mu=1e-8,
-                             neutral=TRUE,windows = 51)
+                             "results/generic/model2_neutral_tajD.csv",
+                             neutral=TRUE)
 simplot_grid(model2_neutral,model2_events,model2_event_names,ratio = F)
 
 ```
@@ -581,8 +581,8 @@ simplot_grid(model2_neutral,model2_events,model2_event_names,ratio = F)
 ```{r}
 model2_bgs <-read_sim("results/generic/model2_bgs_pi.csv",
                          "results/generic/model2_bgs_xi.csv",
-                         "results/generic/model2_bgs_tajD.csv",mu=1e-8,
-                         neutral=FALSE,windows = 51)
+                         "results/generic/model2_bgs_tajD.csv",
+                         neutral=FALSE)
 
 simplot_grid(model2_bgs,model2_events,model2_event_names,ratio = F)
 
@@ -635,7 +635,7 @@ model3_event_names <- c('Bottleneck','Recovered')
 
 model3_neutral <-read_sim("results/generic/model3_neutral_pi.csv",
                              "results/generic/model3_neutral_xi.csv",
-                             "results/generic/model3_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model3_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model3_neutral,model3_events,model3_event_names,ratio = F)
 
@@ -645,7 +645,7 @@ simplot_grid(model3_neutral,model3_events,model3_event_names,ratio = F)
 ```{r}
 model3_bgs <-read_sim("results/generic/model3_bgs_pi.csv",
                          "results/generic/model3_bgs_xi.csv",
-                         "results/generic/model3_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model3_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model3_bgs,model3_events,model3_event_names,ratio = F)
@@ -699,7 +699,7 @@ model4_event_names <- c('Bottleneck','Growth','Recovered')
 
 model4_neutral <-read_sim("results/generic/model4_neutral_pi.csv",
                              "results/generic/model4_neutral_xi.csv",
-                             "results/generic/model4_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model4_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model4_neutral,model4_events,model4_event_names,ratio = F)
 
@@ -709,7 +709,7 @@ simplot_grid(model4_neutral,model4_events,model4_event_names,ratio = F)
 ```{r}
 model4_bgs <-read_sim("results/generic/model4_bgs_pi.csv",
                          "results/generic/model4_bgs_xi.csv",
-                         "results/generic/model4_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model4_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model4_bgs,model4_events,model4_event_names,ratio = F)
@@ -763,7 +763,7 @@ model5_event_names <- c('Bottleneck','Growth','Recovered')
 
 model5_neutral <-read_sim("results/generic/model5_neutral_pi.csv",
                              "results/generic/model5_neutral_xi.csv",
-                             "results/generic/model5_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model5_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model5_neutral,model5_events,model5_event_names,ratio = F)
 
@@ -773,7 +773,7 @@ simplot_grid(model5_neutral,model5_events,model5_event_names,ratio = F)
 ```{r}
 model5_bgs <-read_sim("results/generic/model5_bgs_pi.csv",
                          "results/generic/model5_bgs_xi.csv",
-                         "results/generic/model5_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model5_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model5_bgs,model5_events,model5_event_names,ratio = F)
@@ -815,7 +815,7 @@ ggsave('figures/generic_models/smooth_distance_summary_model5.pdf',width = 16,he
 
 ## model6 
 ```{r}
-model6_events <- c(0.9,0.95)
+model6_events <- c(0.,0.05)
 model6_event_names <- c('Bottleneck','Recovered')
 ```
 
@@ -826,7 +826,7 @@ model6_event_names <- c('Bottleneck','Recovered')
 
 model6_neutral <-read_sim("results/generic/model6_neutral_pi.csv",
                              "results/generic/model6_neutral_xi.csv",
-                             "results/generic/model6_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model6_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model6_neutral,model6_events,model6_event_names,ratio = F)
 
@@ -836,7 +836,7 @@ simplot_grid(model6_neutral,model6_events,model6_event_names,ratio = F)
 ```{r}
 model6_bgs <-read_sim("results/generic/model6_bgs_pi.csv",
                          "results/generic/model6_bgs_xi.csv",
-                         "results/generic/model6_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model6_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model6_bgs,model6_events,model6_event_names,ratio = F)
@@ -879,7 +879,7 @@ ggsave('figures/generic_models/smooth_distance_summary_model6.pdf',width = 16,he
 
 ## model7 
 ```{r}
-model7_events <- c(0.9,0.9667)
+model7_events <- c(0.0,0.0667)
 model7_event_names <- c('Bottleneck','Recovered')
 ```
 
@@ -890,7 +890,7 @@ model7_event_names <- c('Bottleneck','Recovered')
 
 model7_neutral <-read_sim("results/generic/model7_neutral_pi.csv",
                              "results/generic/model7_neutral_xi.csv",
-                             "results/generic/model7_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model7_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model7_neutral,model7_events,model7_event_names,ratio = F)
 
@@ -900,7 +900,7 @@ simplot_grid(model7_neutral,model7_events,model7_event_names,ratio = F)
 ```{r}
 model7_bgs <-read_sim("results/generic/model7_bgs_pi.csv",
                          "results/generic/model7_bgs_xi.csv",
-                         "results/generic/model7_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model7_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model7_bgs,model7_events,model7_event_names,ratio = F)
@@ -943,7 +943,7 @@ ggsave('figures/generic_models/smooth_distance_summary_model7.pdf',width = 16,he
 
 ## model8 
 ```{r}
-model8_events <- c(0.9,0.95,0.9750)
+model8_events <- c(0.0,0.05,0.0750)
 model8_event_names <- c('Bottleneck','Growth','Recovered')
 ```
 
@@ -954,7 +954,7 @@ model8_event_names <- c('Bottleneck','Growth','Recovered')
 
 model8_neutral <-read_sim("results/generic/model8_neutral_pi.csv",
                              "results/generic/model8_neutral_xi.csv",
-                             "results/generic/model8_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model8_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model8_neutral,model8_events,model8_event_names,ratio = F)
 
@@ -964,7 +964,7 @@ simplot_grid(model8_neutral,model8_events,model8_event_names,ratio = F)
 ```{r}
 model8_bgs <-read_sim("results/generic/model8_bgs_pi.csv",
                          "results/generic/model8_bgs_xi.csv",
-                         "results/generic/model8_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model8_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model8_bgs,model8_events,model8_event_names,ratio = F)
@@ -1006,7 +1006,7 @@ ggsave('figures/generic_models/smooth_distance_summary_model8.pdf',width = 16,he
 
 ## model9 
 ```{r}
-model9_events <- c(0.9,0.95,0.9833)
+model9_events <- c(0.0,0.05,0.0833)
 model9_event_names <- c('Bottleneck','Growth','Recovered')
 ```
 
@@ -1017,7 +1017,7 @@ model9_event_names <- c('Bottleneck','Growth','Recovered')
 
 model9_neutral <-read_sim("results/generic/model9_neutral_pi.csv",
                              "results/generic/model9_neutral_xi.csv",
-                             "results/generic/model9_neutral_tajD.csv",mu=1e-8,
+                             "results/generic/model9_neutral_tajD.csv",
                              neutral=TRUE)
 simplot_grid(model9_neutral,model9_events,model9_event_names,ratio = F)
 
@@ -1027,7 +1027,7 @@ simplot_grid(model9_neutral,model9_events,model9_event_names,ratio = F)
 ```{r}
 model9_bgs <-read_sim("results/generic/model9_bgs_pi.csv",
                          "results/generic/model9_bgs_xi.csv",
-                         "results/generic/model9_bgs_tajD.csv",mu=1e-8,
+                         "results/generic/model9_bgs_tajD.csv",
                          neutral=FALSE)
 
 simplot_grid(model9_bgs,model9_events,model9_event_names,ratio = F)
@@ -1064,4 +1064,195 @@ ggsave('figures/generic_models/region_summary_model9.pdf',width = 12,heigh=9)
 plot_ratios(model9,model9_events)
 
 ggsave('figures/generic_models/smooth_distance_summary_model9.pdf',width = 16,height=7)
+```
+
+
+
+## model10 
+```{r}
+model10_events <- c(0.0)
+model10_event_names <- c('Bottleneck')
+```
+
+
+
+### Neutral data
+```{r}
+
+model10_neutral <-read_sim("results/generic/model10_neutral_pi.csv",
+                             "results/generic/model10_neutral_xi.csv",
+                             "results/generic/model10_neutral_tajD.csv",
+                             neutral=TRUE)
+simplot_grid(model10_neutral,model10_events,model10_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model10_bgs <-read_sim("results/generic/model10_bgs_pi.csv",
+                         "results/generic/model10_bgs_xi.csv",
+                         "results/generic/model10_bgs_tajD.csv",
+                         neutral=FALSE)
+
+simplot_grid(model10_bgs,model10_events,model10_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model10 <- merge_sel_neutral(model10_bgs,model10_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model10,model10_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model10,model10_events,'pi')+theme(legend.position='none'),
+plot_over_time(model10,model10_events,'xi')+theme(legend.position='none'),
+plot_over_time(model10,model10_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model10.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model10,model10_events,model10_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model10.pdf',width = 12,heigh=9)
+
+plot_ratios(model10,model10_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model10.pdf',width = 16,height=7)
+```
+
+
+## model11 
+```{r}
+model11_events <- c(0.0)
+model11_event_names <- c('Bottleneck')
+```
+
+
+
+### Neutral data
+```{r}
+
+model11_neutral <-read_sim("results/generic/model11_neutral_pi.csv",
+                             "results/generic/model11_neutral_xi.csv",
+                             "results/generic/model11_neutral_tajD.csv",
+                             neutral=TRUE)
+simplot_grid(model11_neutral,model11_events,model11_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model11_bgs <-read_sim("results/generic/model11_bgs_pi.csv",
+                         "results/generic/model11_bgs_xi.csv",
+                         "results/generic/model11_bgs_tajD.csv",
+                         neutral=FALSE)
+
+simplot_grid(model11_bgs,model11_events,model11_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model11 <- merge_sel_neutral(model11_bgs,model11_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model11,model11_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model11,model11_events,'pi')+theme(legend.position='none'),
+plot_over_time(model11,model11_events,'xi')+theme(legend.position='none'),
+plot_over_time(model11,model11_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model11.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model11,model11_events,model11_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model11.pdf',width = 12,heigh=9)
+
+plot_ratios(model11,model11_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model11.pdf',width = 16,height=7)
+```
+
+
+
+## model12 
+```{r}
+model12_events <- c(0.0)
+model12_event_names <- c('Growth')
+```
+
+
+
+### Neutral data
+```{r}
+
+model12_neutral <-read_sim("results/generic/model12_neutral_pi.csv",
+                             "results/generic/model12_neutral_xi.csv",
+                             "results/generic/model12_neutral_tajD.csv",
+                             neutral=TRUE)
+simplot_grid(model12_neutral,model12_events,model12_event_names,ratio = F)
+
+```
+
+### BGS data 
+```{r}
+model12_bgs <-read_sim("results/generic/model12_bgs_pi.csv",
+                         "results/generic/model12_bgs_xi.csv",
+                         "results/generic/model12_bgs_tajD.csv",
+                         neutral=FALSE)
+
+simplot_grid(model12_bgs,model12_events,model12_event_names,ratio = F)
+
+```
+
+### Merge data
+```{r}
+model12 <- merge_sel_neutral(model12_bgs,model12_neutral)
+```
+
+### Plot absolute values
+```{r, fig.height=12}
+legend <- get_legend(plot_over_time(model12,model12_events,'pi'))
+plot_grid(ncol=2,rel_widths = c(90,10),
+plot_grid(
+plot_over_time(model12,model12_events,'pi')+theme(legend.position='none'),
+plot_over_time(model12,model12_events,'xi')+theme(legend.position='none'),
+plot_over_time(model12,model12_events,'tajD')+theme(legend.position='none'),
+nrow = 3,align = 'hv',axis = 'lb'),
+legend)
+
+ggsave('figures/generic_models/origVal_distance_summary_model12.pdf',width = 16,height = 12)
+
+```
+
+
+### Plot ratios
+```{r}
+simplot_grid(model12,model12_events,model12_event_names,ratio = T)
+
+ggsave('figures/generic_models/region_summary_model12.pdf',width = 12,heigh=9)
+
+plot_ratios(model12,model12_events)
+
+ggsave('figures/generic_models/smooth_distance_summary_model12.pdf',width = 16,height=7)
 ```

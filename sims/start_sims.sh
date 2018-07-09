@@ -12,18 +12,14 @@
 
 echo replicate $SLURM_ARRAY_TASK_ID
 
-#mkdir -p results/tennessen/burnins
-#srun python sims/simulate_real_life.py demographies/tennessen.csv results/tennessen/ human $SLURM_ARRAY_TASK_ID
+mkdir -p results/tennessen/burnins
+srun python sims/simulate_humans.py demographies/tennessen.csv results/tennessen/ $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/torres//burnins
-#srun python sims/simulate_real_life.py demographies/torres.csv results/torres/ human $SLURM_ARRAY_TASK_ID
+#srun python sims/simulate_humans.py demographies/torres.csv results/torres/ $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/maize//burnins
-#srun python sims/simulate_real_life.py demographies/maize.csv results/maize/ maize $SLURM_ARRAY_TASK_ID
-
+#srun python sims/simulate_maize.py demographies/maize.csv results/maize/ $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/generic/burnins
-#srun python sims/simulate_generic.py demographies/generic_models.csv results/test/ $SLURM_ARRAY_TASK_ID
-
-mkdir -p results/generic_test/burnins
-srun python sims/simulate_test.py demographies/generic_models.csv results/generic_test/ $SLURM_ARRAY_TASK_ID
+#srun python sims/simulate_generic.py demographies/generic_models.csv results/generic/ $SLURM_ARRAY_TASK_ID

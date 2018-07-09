@@ -14,15 +14,11 @@ replicate = str(sys.argv[3]) #replicate name
 #models = np.array(demographies.columns[:-1])
 #print(models)
 
-#demog =get_demography(demog_file)
-demographies = pd.read_csv(demog_file)
-models = np.array(demographies.columns[:-1])
+demog =get_demography(demog_file)
 
-print(models)
 
-Nstart = 20000#int(demog.item(0))
+Nstart = int(demog.item(0))
 mu = 1.66e-8
-Nwindows = 20
 
 
 
@@ -76,39 +72,26 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
 print('burnin done')
 print('Generation',mypop.generation)
 
-for model in models:
 
 
-    print('Model:',model)
-    model_id = model.replace(" ", "").lower() + '/'
-    print(model_id)
-    model_path = out_path + model_id
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-    demog = demographies[model].as_matrix()
-    demog = demog[~np.isnan(demog)]
-#demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
 
-#Unpickle to create a new pop:
-#pop2 = pickle.loads(ppop)
+with lzma.open(burnin_name, 'rb') as f:
+    pop2 = pickle.load(f)
+print(mypop==pop2)
+print(pop2.generation)
 
-    with lzma.open(burnin_name, 'rb') as f:
-        pop2 = pickle.load(f)
-    print(mypop==pop2)
-    print(pop2.generation)
+p['demography'] = demog
+params = fp11.model_params.SlocusParams(**p)
 
-    p['demography'] = demog
-    params = fp11.model_params.SlocusParams(**p)
+# add recorder that records pi, singletons and tajimas D
+set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
+rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
 
-    # add recorder that records pi, singletons and tajimas D
-    set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
-    rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
+wf.evolve(rng2, pop2, params, rec1)
+print('Generation', pop2.generation)
 
-    wf.evolve(rng2, pop2, params, rec1)
-    print('Generation', pop2.generation)
-
-    # write output
-    write_output(rec1, model_path, 'neutral', replicate)
+# write output
+write_output(rec1, out_path, 'neutral', replicate)
 
 
 
@@ -177,38 +160,23 @@ with lzma.open(burnin_name, "wb", preset=9) as f:
 
 
 
-for model in models:
-    print('Model:',model)
-    model_id = model.replace(" ", "").lower() + '/'
-    print(model_id)
-    model_path = out_path + model_id
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
-    demog = demographies[model].as_matrix()
-    demog = demog[~np.isnan(demog)]
 
+with lzma.open(burnin_name, 'rb') as f:
+    pop2 = pickle.load(f)
+print(pop2.generation)
+#Unpickle to create a new pop:
+#    pop2 = pickle.loads(ppop)
+#    print(mypop==pop2)
 
-    #model_path = out_path + 'maize/'
-    #if not os.path.exists(model_path):
-    #    os.makedirs(model_path)
-    #demog = np.array([Nstart]*int(0.1*Nstart),dtype=np.uint32)
+p['demography'] = demog
+params = fp11.model_params.SlocusParams(**p)
 
-    with lzma.open(burnin_name, 'rb') as f:
-        pop2 = pickle.load(f)
-    print(pop2.generation)
-    #Unpickle to create a new pop:
-    #    pop2 = pickle.loads(ppop)
-    #    print(mypop==pop2)
+# add recorder that records pi, singletons and tajimas D
+set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
+rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
 
-    p['demography'] = demog
-    params = fp11.model_params.SlocusParams(**p)
+wf.evolve(rng2, pop2, params, rec1)
+print('Generation', pop2.generation)
 
-    # add recorder that records pi, singletons and tajimas D
-    set_gen = (10 * Nstart) + 200  # adjust generation labels without burnin and start
-    rec1 = neutral_div(set_gen, final=pop2.generation + len(demog) + 200, Nstart=Nstart)
-
-    wf.evolve(rng2, pop2, params, rec1)
-    print('Generation', pop2.generation)
-
-    # write output
-    write_output(rec1, model_path, 'bgs', replicate)
+# write output
+write_output(rec1, out_path, 'bgs', replicate)
