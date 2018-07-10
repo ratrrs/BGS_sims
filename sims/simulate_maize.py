@@ -29,7 +29,7 @@ sregion= []
 nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(50,55)]
 # Mutation rates
 mu_n = mu * 40000 * 5
-rec = 8.2e-10 * 40000 * 5
+rec = 8.2e-9 * 40000 * 5
 rates = [mu_n, 0, rec]
 
 # constant size for 10 N generations
@@ -109,7 +109,7 @@ sregion =   [fp11.GammaS(i, i + 1, 1., -0.29426, 0.184, h=1.0, coupled=True) for
 nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(50,55)]
 
 # Mutation rate
-rec = 8.2e-10 * 40000 * 55
+rec = 8.2e-9 * 40000 * 55
 mu_s = mu * 40000 * 50 * 0.2
 mu_n = mu * 40000 * 5
 rates = [mu_n, mu_s, rec]
