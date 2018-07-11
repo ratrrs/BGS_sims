@@ -35,7 +35,7 @@ def str2byte(tup,fmtstring):
     return(byte_tup)
 
 class neutral_div:
-    def __init__(self,set_gen,final,Nstart,nwindows=55,beginning = 50):
+    def __init__(self,set_gen,final,Nstart,nwindows=55,beginning = 50,replicate=1):
         self.nwindows = nwindows
         self.val_per_window = 4
         self.beginning = beginning
@@ -46,20 +46,29 @@ class neutral_div:
         self.final = final
         self.set_gen = set_gen
         self.Nstart = Nstart
+        self.__rng = fp11.GSLrng(np.random.randint(42+float(replicate)))
+
     def __call__(self, pop):
-        rng3 = fp11.GSLrng(np.random.randint(420000))
+
+
         if self.counter % 50 == 0  or (pop.generation==self.final):
  #           print(pop.generation)
             actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
-            ind_sampled = 400
-            samp = fp11.sampling.sample_separate(rng3, pop, ind_sampled, True)
-            neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
-            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=self.beginning, ending_pos=self.nwindows)
-            window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
 
-            window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))])
+            # sample chromosomes from the population
+            chr_sampled = 400
+            samp = fp11.sampling.sample_separate(self.__rng, pop, chr_sampled, True)
+            neutral_sample = polyt.SimData([str2byte(mut, 'utf-8') for mut in samp[0]])
+
+            # split into windows
+            w = Windows(neutral_sample, window_size=1/self.val_per_window, step_len=1/self.val_per_window, starting_pos=self.beginning, ending_pos=self.nwindows)
+
+            # calculate summaries
+            window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
+            window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))],decimals=3)
             window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)
 
+            # add data to output
             self.pi.append(np.append(actual_gen,window_pi))
             self.singleton.append(np.append(actual_gen,window_singleton))
             self.tajimasD.append(np.append(actual_gen,window_tajimasD))
