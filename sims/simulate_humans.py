@@ -24,9 +24,9 @@ mu = 1.66e-8
 
 
 ################## simulate neutral ############################
-recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(50,55)]
+recregion =[fp11.Region(50,55,1., coupled=True)]
 sregion= []
-nregion = [fp11.Region(i, i + 1, 1, coupled=True) for i in range(50,55)]
+nregion = [fp11.Region(50, 55, 1., coupled=True)]
 # Mutation rates
 mu_n = mu * 40000 * 5
 rec = 8.2e-10 * 40000 * 5
@@ -97,16 +97,12 @@ write_output(rec1, out_path, 'neutral', replicate)
 
 ################## simulate BGS ############################
 
-recregion =[fp11.Region(i,i+1,1, coupled=True) for i in range(55)]
+recregion =[fp11.Region(0,55,1., coupled=True)]
+sregion =   [fp11.GammaS(0, 50, 1., -0.029426, 0.184, h=1.0, coupled=True)] +\
+            [fp11.GammaS(0, 50, 2., -0.000518, 0.0415, h=1.0, coupled=True)] # conserved non-coding DFE 2/3 of sel mutations in this region
 
 
-sregion =   [fp11.GammaS(i, i + 1, 1., -0.029426, 0.184, h=1.0, coupled=True) for i in range(50)] +\
-            [fp11.GammaS(i, i + 1, 2., -0.000518, 0.0415, h=1.0, coupled=True) for i in range(50)] # conserved non-coding DFE 2/3 of sel mutations in this region
-
-#sregion = [fp11.GammaS(-1, 0, 1, -0.83, 0.01514, h=1.0, coupled=True)]
-
-
-nregion = [fp11.Region(i, i + 1, 1., coupled=True) for i in range(50,55)]
+nregion = [fp11.Region(50, 55, 1., coupled=True)]
 
 # Mutation rate
 rec = 8.2e-10 * 40000 * 55
