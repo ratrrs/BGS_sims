@@ -93,7 +93,7 @@ rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
 
 # simulate until equilibrium
 wf.evolve(rng2, mypop,params,rec1)
-write_output(rec1, model_path, 'neutral', replicate)
+write_output(rec1, out_path, 'neutral', replicate)
 
 
 
@@ -131,7 +131,7 @@ rates = [mu_n, mu_s, rec]
 mypop =  fp11.SlocusPop(Nstart)
 
 #prepare random number gernerator
-rng2 = fp11.GSLrng(np.random.randint(42*(1+float(replicate))))
+rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
 
 
 p = {'nregions':nregion,
@@ -161,4 +161,4 @@ wf.evolve(rng2, mypop,params,rec1)
 print('burnin done')
 print('Generation',mypop.generation)
 
-write_output(rec1, model_path, 'bgs', replicate)
+write_output(rec1, out_path, 'bgs', replicate)
