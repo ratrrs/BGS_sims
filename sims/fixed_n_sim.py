@@ -5,12 +5,31 @@ import os
 import lzma
 import fwdpy11 as fp11
 
-Nstart = int(sys.argv[1]) # 400 
-out_path = sys.argv[2]#'../results/fixedn/n400'
-replicate = str(sys.argv[3]) #replicate name
+out_path = sys.argv[1]#'../results/fixedn/'
+replicate = str(sys.argv[2]) #replicate name
 
+starts = [200,400]#,800,1000,1500,2500,5000,10000,15000,20000,25000,30000]
 print(Nstart)
 mu = 1.66e-8
+
+
+def write_output(recorder,out_path,name,replicate):
+    pi = pd.DataFrame(recorder.pi[1:], columns=recorder.pi[0])
+    pi['replicate'] = replicate
+    pi_file =out_path + '%s_%s_pi.csv' % (replicate,name)
+    if not os.path.isfile(pi_file):
+    	pi.to_csv(pi_file, index=False)
+    else:
+    	pi.to_csv(pi_file,mode='a',header=False, index=False)
+    singleton = pd.DataFrame(recorder.singleton[1:], columns=recorder.singleton[0])
+    singleton['replicate'] = replicate
+    singleton.to_csv(out_path + '%s_%s_xi.csv' % (replicate,name), index=False)
+    tajimasD= pd.DataFrame(recorder.tajimasD[1:], columns=recorder.tajimasD[0])
+    tajimasD['replicate'] = replicate
+    tajimasD.to_csv(out_path + '%s_%s_tajD.csv' % (replicate,name), index=False)
+
+
+
 
 class div_rec:
     def __init__(self,set_gen,final,Nstart,nwindows=55,beginning = 50,replicate=1):
@@ -31,7 +50,7 @@ class div_rec:
 
         if pop.generation==self.final:
  #           print(pop.generation)
-            actual_gen = np.around([(pop.generation-self.set_gen)/self.Nstart],decimals=3)
+            actual_gen = Nstart
 
             # sample chromosomes from the population
             chr_sampled = 400
@@ -63,49 +82,51 @@ mu_n = mu * 40000 * 5
 rec = 8.2e-10 * 40000 * 5
 rates = [mu_n, 0, rec]
 
-# constant size for 10 N generations
-burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
+for i in starts:
+	Nstart = i
+	# constant size for 10 N generations
+	burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
 
-mypop =  fp11.SlocusPop(Nstart)
+	mypop =  fp11.SlocusPop(Nstart)
 
-#prepare random number gernerator
-rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
+	#prepare random number gernerator
+	rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
 
-print('rec')
-[print(i) for i in recregion]
-print('sregion')
-[print(i) for i in sregion]
-print('nregion')
-[print(i) for i in nregion]
-print(rates)
+	print('rec')
+	[print(i) for i in recregion]
+	print('sregion')
+	[print(i) for i in sregion]
+	print('nregion')
+	[print(i) for i in nregion]
+	print(rates)
 
-p = {'nregions':nregion,
-'sregions': sregion,
-'recregions':recregion,
-'rates':rates,
-'demography':burnin,
-}
-params = fp11.model_params.SlocusParams(**p)
+	p = {'nregions':nregion,
+	'sregions': sregion,
+	'recregions':recregion,
+	'rates':rates,
+	'demography':burnin,
+	}
+	params = fp11.model_params.SlocusParams(**p)
 
-rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
-
-
-
-# simulate until equilibrium
-wf.evolve(rng2, mypop,params,rec1)
-write_output(rec1, out_path, 'neutral', replicate)
+	rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
 
 
 
+	# simulate until equilibrium
+	wf.evolve(rng2, mypop,params,rec1)
+	write_output(rec1, out_path, 'neutral', replicate)
 
-#ppop = pickle.dumps(mypop,-1)
-# pickle equilibirum population
-#burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
-#with lzma.open(burnin_name, "wb", preset=9) as f:
-#    pickle.dump(mypop, f, -1)
 
-print('burnin done')
-print('Generation',mypop.generation)
+
+
+	#ppop = pickle.dumps(mypop,-1)
+	# pickle equilibirum population
+	#burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
+	#with lzma.open(burnin_name, "wb", preset=9) as f:
+	#    pickle.dump(mypop, f, -1)
+
+	print('burnin done')
+	print('Generation',mypop.generation)
 
 
 ################## simulate BGS ############################
@@ -128,37 +149,38 @@ rates = [mu_n, mu_s, rec]
 # constant size for 10 N generations
 #burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
 
-mypop =  fp11.SlocusPop(Nstart)
+for i in starts:
+	mypop =  fp11.SlocusPop(Nstart)
 
-#prepare random number gernerator
-rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
-
-
-p = {'nregions':nregion,
-'sregions': sregion,
-'recregions':recregion,
-'rates':rates,
-'demography':burnin,
-}
-
-params = fp11.model_params.SlocusParams(**p)
-
-burn_rec = track_burnin()
-print('sregions')
-[print(i) for i in p['sregions']]
-print('nregions')
-[print(i) for i in p['nregions']]
-print('Recomb region')
-[print(i) for i in p['recregions']]
-print(p['rates'])
-
-# simulate until equilibrium
-
-rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
+	#prepare random number gernerator
+	rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
 
 
-wf.evolve(rng2, mypop,params,rec1)
-print('burnin done')
-print('Generation',mypop.generation)
+	p = {'nregions':nregion,
+	'sregions': sregion,
+	'recregions':recregion,
+	'rates':rates,
+	'demography':burnin,
+	}
 
-write_output(rec1, out_path, 'bgs', replicate)
+	params = fp11.model_params.SlocusParams(**p)
+
+	burn_rec = track_burnin()
+	print('sregions')
+	[print(i) for i in p['sregions']]
+	print('nregions')
+	[print(i) for i in p['nregions']]
+	print('Recomb region')
+	[print(i) for i in p['recregions']]
+	print(p['rates'])
+
+	# simulate until equilibrium
+
+	rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
+
+
+	wf.evolve(rng2, mypop,params,rec1)
+	print('burnin done')
+	print('Generation',mypop.generation)
+
+	write_output(rec1, out_path, 'bgs', replicate)
