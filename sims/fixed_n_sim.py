@@ -5,7 +5,7 @@ import os
 import lzma
 import fwdpy11 as fp11
 
-Nstart = float(sys.argv[1]) # 400 
+Nstart = int(sys.argv[1]) # 400 
 out_path = sys.argv[2]#'../results/fixedn/n400'
 replicate = str(sys.argv[3]) #replicate name
 
@@ -64,7 +64,7 @@ rec = 8.2e-10 * 40000 * 5
 rates = [mu_n, 0, rec]
 
 # constant size for 10 N generations
-burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
+burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
 
 mypop =  fp11.SlocusPop(Nstart)
 
