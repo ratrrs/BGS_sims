@@ -46,7 +46,7 @@ read_sim<-function(pidata,xidata,tajdata,roh=8.2e-10,neutral=FALSE,windows=20){
     gather(window,value,-gen,-stat,-sim) %>% 
     group_by(gen,stat,window) %>%
     summarize(mean_val=mean(value,na.rm = T)) %>%
-    mutate(centimorgen=as.numeric(window)*10000*roh*100 ,mean_val=mean_val)
+    mutate(centimorgen=(as.numeric(window)-1)*10000*roh*100 ,mean_val=mean_val)
   return(data)
 }
 #neutral=TRUE
@@ -154,8 +154,8 @@ NULL
 Function to plot absolute values over time and by genetic distance
 ```{r}
 plot_over_time <- function(data,events,stats,windows=20){
-  center <- windows/2+.5
-  window_list <- c(center,center-10,center,center+10,center-20,center+20,1,windows,center+5,center-5)
+  center <- 1
+  window_list <- c(2,10,20)
   comb <- data %>%
   filter(window%in%window_list,stat==stats) %>%
   mutate(centimorgen=abs(centimorgen)) %>%
@@ -396,8 +396,8 @@ ggsave('figures/smooth_distance_summary_torres.pdf',width = 16,height=7)
 
 maize_neutral <-read_sim("results/maize_neutral_pi.csv",
                              "results/maize_neutral_xi.csv",
-                             "results/maize_neutral_tajD.csv",mu=3e-8,
-                             neutral=TRUE,windows = 21)
+                             "results/maize_neutral_tajD.csv",roh = 8.2e-9,
+                             neutral=TRUE)
 
 simplot_grid(maize_neutral,maize_events,maize_event_names,ratio = F)
 
@@ -407,8 +407,8 @@ simplot_grid(maize_neutral,maize_events,maize_event_names,ratio = F)
 ```{r}
 maize_bgs <-read_sim("results/maize_bgs_pi.csv",
                          "results/maize_bgs_xi.csv",
-                         "results/maize_bgs_tajD.csv",mu=3e-8,
-                         neutral=FALSE,windows=21)
+                         "results/maize_bgs_tajD.csv",roh = 8.2e-9,
+                         neutral=FALSE)
 
 simplot_grid(maize_bgs,maize_events,maize_event_names,ratio = F)
 
@@ -526,20 +526,73 @@ simplot_grid(model1_bgs,model1_events,model1_event_names,ratio = F)
 ### Merge data
 ```{r}
 model1 <- merge_sel_neutral(model1_bgs,model1_neutral)
+head(model1)
 ```
+
+
+```{r}
+var_pi <- function(theta,n){
+  
+  my_var <- (((n+1)*theta)/(3*(n-1)))+((2*(n^2+n+3)*theta^2)/(9*n*(n-1)))
+  
+}
+model1_pi_var <- var_pi(13.28,400)
+sqrt(model1_pi_var)/sqrt(1000)
+theta <- 13.28
+n=400
+
+
+neutral_pi <- read.csv("results/generic/model1_neutral_pi.csv")
+head(neutral_pi)
+tail(neutral_pi)
+neutral_pi %>%
+  gather(value,window,-replicate,-gen) %>%
+  group_by(replicate,value) %>%
+  summarise(window=mean(window))%>%
+  filter(window>13.28+sqrt(model1_pi_var)*2) 
+
+3060/100000
+length(unique(neutral_pi$replicate))
+ggplot(neutral_pi,aes(gen,X1,group=replicate))+geom_line()+
+    geom_ribbon(aes(ymax = 13.28+sqrt(model1_pi_var)*2, ymin = 13.28-(sqrt(model1_pi_var)*2)))
+
+neutral_pi %>%
+  group_by(replicate)%>%
+  summarise_at(c("X1", "X2"), mean, na.rm = TRUE) %>%
+  filter(X1 >13.28+sqrt(model1_pi_var)*2, X2 >13.28+sqrt(model1_pi_var)*2) %>%
+  count()
+72/5000
+
+mean(neutral_pi$window)
+```
+
+
 
 ### Plot absolute values
 ```{r, fig.height=12}
 legend <- get_legend(plot_over_time(model1,model1_events,'pi'))
 plot_grid(ncol=2,rel_widths = c(90,10),
 plot_grid(
-plot_over_time(model1,model1_events,'pi')+theme(legend.position='none'),
-plot_over_time(model1,model1_events,'xi')+theme(legend.position='none'),
+plot_over_time(model1,model1_events,'pi')+theme(legend.position='none')+geom_hline(yintercept = 13.28),
+plot_over_time(model1,model1_events,'xi')+theme(legend.position='none')+geom_hline(yintercept = 13.28),
 plot_over_time(model1,model1_events,'tajD')+theme(legend.position='none'),
 nrow = 3,align = 'hv',axis = 'lb'),
 legend)
-
 ggsave('figures/generic_models/origVal_distance_summary_model1.pdf',width = 16,height = 12)
+
+```
+
+## Check if neutral sims are stabile 
+```{r,eval=FALSE}
+ggplot(filter(model1,stat=='pi',window%in%c(1,10,20)),aes(gen,neutral,group=window))+
+    geom_ribbon(aes(ymax = 13.28+sqrt(model1_pi_var), ymin = 13.28-sqrt(model1_pi_var)))+
+  geom_ribbon(aes(ymax = neutral + sd_neutral/sqrt(1000), ymin = neutral - sd_neutral/sqrt(1000),fill=as.factor(as.numeric(window))),alpha=.2) +geom_line()+
+  geom_hline(yintercept = 13.28)+
+
+  labs(fill='window ')
+
+ggsave('test/origVal_distance_summary_model1.pdf',width = 10,height = 10)
+
 
 ```
 
