@@ -22,11 +22,11 @@ echo replicate $SLURM_ARRAY_TASK_ID
 #srun python sims/simulate_maize.py demographies/maize.csv results/maize/ $SLURM_ARRAY_TASK_ID
 
 mkdir -p results/fixed_n/n200/
-srun python sims/simulate_generic.py 200 results/fixed_n/n200/ $SLURM_ARRAY_TASK_ID
+srun python sims/fixed_n_sim.py 200 results/fixed_n/n200/ $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/fixed_n/n400/
-#srun python sims/simulate_generic.py 400 results/fixed_n/n400/ $SLURM_ARRAY_TASK_ID
+#srun python sims/fixed_n_sim.py 400 results/fixed_n/n400/ $SLURM_ARRAY_TASK_ID
 
 #mkdir -p results/fixed_n/n800/
-#srun python sims/simulate_generic.py 800 results/fixed_n/n800/ $SLURM_ARRAY_TASK_ID
+#srun python sims/fixed_n_sim.py 800 results/fixed_n/n800/ $SLURM_ARRAY_TASK_ID
 
