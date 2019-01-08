@@ -23,10 +23,14 @@ def write_output(recorder,out_path,name,replicate):
     	pi.to_csv(pi_file,mode='a',header=False, index=False)
     singleton = pd.DataFrame(recorder.singleton[1:], columns=recorder.singleton[0])
     singleton['replicate'] = replicate
-    singleton.to_csv(out_path + '%s_%s_xi.csv' % (replicate,name), index=False)
-    tajimasD= pd.DataFrame(recorder.tajimasD[1:], columns=recorder.tajimasD[0])
-    tajimasD['replicate'] = replicate
-    tajimasD.to_csv(out_path + '%s_%s_tajD.csv' % (replicate,name), index=False)
+    xi_file = out_path + '%s_%s_xi.csv' % (replicate,name)
+    if not os.path.isfile(xi_file):
+    	singleton.to_csv(xi_file, index=False)
+    else:
+    	xi.to_csv(xi_file,mode='a',header=False, index=False)
+#    tajimasD= pd.DataFrame(recorder.tajimasD[1:], columns=recorder.tajimasD[0])
+#    tajimasD['replicate'] = replicate
+#    tajimasD.to_csv(out_path + '%s_%s_tajD.csv' % (replicate,name), index=False)
 
 
 
@@ -36,9 +40,9 @@ class div_rec:
         self.nwindows = nwindows
         self.val_per_window = 4
         self.beginning = beginning
-        self.pi = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
-        self.singleton = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
-        self.tajimasD = [['gen']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
+        self.pi = [['N']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
+        self.singleton = [['N']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
+        self.tajimasD = [['N']+[i for i in range((self.nwindows-self.beginning)*self.val_per_window)]]
         self.counter = 1
         self.final = final
         self.set_gen = set_gen
@@ -63,12 +67,12 @@ class div_rec:
             # calculate summaries
             window_pi = np.around([PolySIM(w[i]).thetapi() for i in range(len(w))],decimals=3)
             window_singleton = np.around([PolySIM(w[i]).numsingletons() for i in range(len(w))],decimals=3)
-            window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)
+#            window_tajimasD = np.around([PolySIM(w[i]).tajimasd() for i in range(len(w))],decimals=3)
 
             # add data to output
             self.pi.append(np.append(actual_gen,window_pi))
             self.singleton.append(np.append(actual_gen,window_singleton))
-            self.tajimasD.append(np.append(actual_gen,window_tajimasD))
+#            self.tajimasD.append(np.append(actual_gen,window_tajimasD))
         self.counter += 1
 
 
