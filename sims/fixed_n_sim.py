@@ -9,7 +9,7 @@ out_path = sys.argv[1]#'../results/fixedn/'
 replicate = str(sys.argv[2]) #replicate name
 
 starts = [200,400]#,800,1000,1500,2500,5000,10000,15000,20000,25000,30000]
-print(Nstart)
+
 mu = 1.66e-8
 
 
@@ -84,6 +84,7 @@ rates = [mu_n, 0, rec]
 
 for i in starts:
 	Nstart = i
+	print(Nstart)
 	# constant size for 10 N generations
 	burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
 
@@ -150,6 +151,8 @@ rates = [mu_n, mu_s, rec]
 #burnin=np.array([Nstart]*int(10*Nstart),dtype=np.uint32)
 
 for i in starts:
+	Nstart=i
+	print(Nstart)
 	mypop =  fp11.SlocusPop(Nstart)
 
 	#prepare random number gernerator
