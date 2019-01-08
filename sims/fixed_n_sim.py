@@ -5,11 +5,11 @@ import os
 import lzma
 import fwdpy11 as fp11
 
-Nstart = sys.argv[1]#'../demographies/generic_models.csv'
-out_path = sys.argv[2]#'../results/generic/'
+Nstart = float(sys.argv[1]) # 400 
+out_path = sys.argv[2]#'../results/fixedn/n400'
 replicate = str(sys.argv[3]) #replicate name
 
-
+print(Nstart)
 mu = 1.66e-8
 
 class div_rec:
