@@ -27,7 +27,7 @@ def write_output(recorder,out_path,name,replicate):
     if not os.path.isfile(xi_file):
     	singleton.to_csv(xi_file, index=False)
     else:
-    	xi.to_csv(xi_file,mode='a',header=False, index=False)
+    	singleton.to_csv(xi_file,mode='a',header=False, index=False)
 #    tajimasD= pd.DataFrame(recorder.tajimasD[1:], columns=recorder.tajimasD[0])
 #    tajimasD['replicate'] = replicate
 #    tajimasD.to_csv(out_path + '%s_%s_tajD.csv' % (replicate,name), index=False)
