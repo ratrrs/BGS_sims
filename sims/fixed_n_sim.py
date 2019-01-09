@@ -53,7 +53,7 @@ class div_rec:
 
 
         if pop.generation==10*Nstart:
-            print(pop.generation)
+            print("record at:",pop.generation)
             actual_gen = Nstart
 
             # sample chromosomes from the population
