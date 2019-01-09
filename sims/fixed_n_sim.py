@@ -102,6 +102,8 @@ rates = [mu_n, mu_s, rec]
 for i in starts:
 	Nstart=i
 	print(Nstart)
+	# constant size for 10 N generations
+	burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
 	mypop2 =  fp11.SlocusPop(Nstart)
 
 	#prepare random number gernerator
