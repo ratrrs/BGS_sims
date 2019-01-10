@@ -76,7 +76,62 @@ class div_rec:
         self.counter += 1
 
 
+################## simulate neutral ############################
+recregion =[fp11.Region(50,55,1., coupled=True)]
+sregion= []
+nregion = [fp11.Region(50, 55, 1., coupled=True)]
 
+# Mutation rates
+mu_n = mu * 40000 * 5
+rec = 8.2e-10 * 40000 * 5
+rates = [mu_n, 0, rec]
+
+for i in starts:
+	Nstart = i
+	print(Nstart)
+	# constant size for 10 N generations
+	burnin=np.array([Nstart]*int(10*float(Nstart)),dtype=np.uint32)
+
+	mypop =  fp11.SlocusPop(Nstart)
+
+	#prepare random number gernerator
+	rng2 = fp11.GSLrng(np.random.randint(122*(1+float(replicate))))
+
+	print('rec')
+	[print(i) for i in recregion]
+	print('sregion')
+	[print(i) for i in sregion]
+	print('nregion')
+	[print(i) for i in nregion]
+	print(rates)
+
+	p = {'nregions':nregion,
+	'sregions': sregion,
+	'recregions':recregion,
+	'rates':rates,
+	'demography':burnin,
+	}
+	params = fp11.model_params.SlocusParams(**p)
+
+	rec1 = div_rec(0, final=int(10*Nstart), Nstart=Nstart,replicate=replicate)
+
+
+
+	# simulate until equilibrium
+	wf.evolve(rng2, mypop,params,rec1)
+	write_output(rec1, out_path, 'neutral', replicate)
+
+
+
+
+	#ppop = pickle.dumps(mypop,-1)
+	# pickle equilibirum population
+	#burnin_name = out_path + "burnins/burnin_neut_%s.lzma9" % replicate
+	#with lzma.open(burnin_name, "wb", preset=9) as f:
+	#    pickle.dump(mypop, f, -1)
+
+	print('burnin done')
+	print('Generation',mypop.generation)
 
 
 ################## simulate BGS ############################
