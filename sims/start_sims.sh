@@ -5,10 +5,10 @@
 #SBATCH -e /group/jrigrp9/stetter_projects/BGS_sims/logs/simulation_stderr-%j.txt
 #SBATCH -t 14-00:00
 #SBATCH -J bgsSim
-#SBATCH --array=0-499
+#SBATCH --array=100-999
 #SBATCH --nodes=1-1
 #SBATCH --ntasks 1
-#SBATCH --exclude bigmem1,bigmem10
+#SBATCH --exclude bigmem1
 
 echo replicate $SLURM_ARRAY_TASK_ID
 
