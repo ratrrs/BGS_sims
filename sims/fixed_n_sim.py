@@ -8,8 +8,8 @@ import fwdpy11 as fp11
 out_path = sys.argv[1]#'../results/fixedn/'
 replicate = str(sys.argv[2]) #replicate name
 
-starts = [200,400,800,1000,1500,2500,5000,10000,15000,20000,25000,30000]
-
+#starts = [200,400,800,1000,1500,2500,5000,10000,15000,20000,25000,30000]
+starts = [200,400,800,1000,1500,2500]
 mu = 1.66e-8
 
 

@@ -5,7 +5,7 @@
 #SBATCH -e /group/jrigrp9/stetter_projects/BGS_sims/logs/simulation_stderr-%j.txt
 #SBATCH -t 14-00:00
 #SBATCH -J bgsSim
-#SBATCH --array=100-999
+#SBATCH --array=1-99
 #SBATCH --nodes=1-1
 #SBATCH --ntasks 1
 #SBATCH --exclude bigmem1
@@ -21,12 +21,11 @@ echo replicate $SLURM_ARRAY_TASK_ID
 #mkdir -p results/maize/burnins
 #srun python sims/simulate_maize.py demographies/maize.csv results/maize/ $SLURM_ARRAY_TASK_ID
 
-mkdir -p results/fixed_n/
-srun python sims/fixed_n_sim.py results/fixed_n/ $SLURM_ARRAY_TASK_ID
+#mkdir -p results/fixed_n2/
+#srun python sims/fixed_n_sim.py results/fixed_n2/ $SLURM_ARRAY_TASK_ID
 
-#mkdir -p results/fixed_n/n400/
-#srun python sims/fixed_n_sim.py 400 results/fixed_n/n400/ $SLURM_ARRAY_TASK_ID
+mkdir -p results/model13_long/
+srun python sims/simulate_model13_to_equilibrium.py demographies/model13_for_long_sim.csv results/model13_long/ $SLURM_ARRAY_TASK_ID
 
-#mkdir -p results/fixed_n/n800/
-#srun python sims/fixed_n_sim.py 800 results/fixed_n/n800/ $SLURM_ARRAY_TASK_ID
+
 
